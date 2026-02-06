@@ -1,0 +1,99 @@
+{
+  "basics": {
+    "name": "Yash Vora",
+    "location": "San Jose, CA 95125",
+    "email": "voray@purdue.edu",
+    "links": [
+      {
+        "label": "github.com/yashv0ra",
+        "url": "https://github.com/yashv0ra"
+      },
+      {
+        "label": "linkedin.com/in/yashvora06",
+        "url": "https://www.linkedin.com/in/yashvora06/"
+      }
+    ]
+  },
+  "about": {
+    "heading": "About",
+    "summary": "My name is Yash Vora and I am a senior at Purdue University. My strengths lie in my ability to tackle open-ended issues, both with my ability to lead and self-start as well as my prior technical expertise. I'm best positioned in roles where I can quickly learn, iterate, and drive results."
+  },
+  "education": {
+    "school": "Purdue University",
+    "degree": "B.S. in Integrated Business & Engineering, Concentration: Product Management",
+    "date": "May 2026",
+    "gpa": "3.5 GPA",
+    "coursework": "Object-Oriented Programming, Managerial Accounting, Engineering Economics, Physics",
+    "awards": "Dean's List, Semester Honors, Esports Scholarship",
+    "programs": [
+      "Larsen Leaders Academy: High-achieving business students — the Top 20% of Daniels Business School",
+      "IBE Student Council: Small group of students managing >$1M of funding, liaison between students & faculty"
+    ]
+  },
+  "experience": [
+    {
+      "title": "Apple",
+      "subtitle": "Engineering Program Manager Intern",
+      "date": "May 2025 – Aug 2025",
+      "bullets": [
+        "Built a solution to optimize Apple's internal feature development cycle, minimizing conflicts across teams. Iterated through feedback and improvements with 20+ programs to improve throughput by 72% across SWE Programs.",
+        "Orchestrated project timelines and managed execution for 3 feature sets involving internal UX improvement initiatives.",
+        "Developed a RAG-based AI system to analyze developer inputs and recommend cross-impacted teams.",
+        "Tracked issues and blockers across 180+ personnel, analyzing data using SQL dashboards to optimize resources."
+      ]
+    },
+    {
+      "title": "Hyphen",
+      "subtitle": "Hardware Engineering Intern",
+      "date": "Jun 2024 – Aug 2024",
+      "bullets": [
+        "Designed and hand-built a proprietary motor testing protocol utilizing Arduino NFC, CAN protocol, Solidworks, and Python: estimated to save 1080+ engineer hours / year and ~$120k / year in damages.",
+        "Optimized the sales funnel with an automated protocol through Excel and Salesforce generating ~15 new leads / month.",
+        "Wrote a customer case study to bolster the first-ever launch of a Chipotle production use case in Aug 2024."
+      ]
+    },
+    {
+      "title": "Kwality Foods",
+      "subtitle": "Operations Intern",
+      "date": "May 2023 – July 2023",
+      "bullets": [
+        "Personally closed a deal for a new franchise location in Carmel, IN — projected to make >$200k/yr in revenue.",
+        "Employed a variety of marketing techniques to garner a ~47% increase in website traffic. Main techniques included SEO, enhancing social media presence, redesigning the website, and specifically targeting a younger demographic."
+      ]
+    }
+  ],
+  "leadership": [
+    {
+      "title": "National Society of Sales Engineers @ Purdue",
+      "subtitle": "Co-Founder",
+      "date": "Feb 2023 – Dec 2024",
+      "bullets": [
+        "Created a new professional community at Purdue for interest in sales engineering, currently 70+ active members.",
+        "Organized a case competition with Endress+Hauser where 50+ teams competed for $2k; featured to a total audience of over 300k through Purdue campus advertisements and homepages of Purdue Business and Endress+Hauser.",
+        "Received $1k+ in funding and iterated with Endress+Hauser, Salesforce, Wabash, ServiceNow, and Siemens."
+      ]
+    },
+    {
+      "title": "Smash Ultimate Club",
+      "subtitle": "Treasurer, Team Captain, Tournament Organizer",
+      "date": "Aug 2019 – Present",
+      "bullets": [
+        "Directed weekly tournaments pulling $10k/year in revenue, currently at 1098 concurrent members.",
+        "Created the first-ever Purdue Varsity team, leading the team to score 2nd at a Big Ten Esports Championship.",
+        "Organized over 64 tournaments within Purdue and NorCal since 2019, with a steady audience of over 100 members.",
+        "Individually ranked #4 IN, #21 CA, and #710 in the world. Results such as 1st/71, 2nd/90, & 49th/507 at tournaments."
+      ]
+    }
+  ],
+  "skills": {
+    "technical": "Java, Python, Arduino, MATLAB, Solidworks, SQL",
+    "business": "Salesforce CRM, Qualtrics, Adobe Suite"
+  },
+  "ask": [
+    "Pets in Action With Shelters (PAWS)",
+    "Badminton",
+    "Orientation Leader",
+    "AI Projects (Buildspace)",
+    "Study Abroad in Australia"
+  ]
+}
