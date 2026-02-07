@@ -48,3 +48,103 @@ body {
   font-weight: 600;
   color: var(--card-foreground);
 }
+
+.river-flow {
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+  border-radius: 9999px;
+  border: 1px solid rgba(221, 220, 219, 0.28);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(221, 220, 219, 0.11) 30%,
+    rgba(255, 255, 255, 0.17) 52%,
+    rgba(221, 220, 219, 0.1) 78%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.river-flow svg {
+  display: block;
+  width: 100%;
+  height: 110px;
+  shape-rendering: geometricPrecision;
+}
+
+.river-surface {
+  transform-origin: center;
+  will-change: transform;
+  animation: river-bob 8s ease-in-out infinite;
+}
+
+.river-current {
+  opacity: 0.82;
+  will-change: transform, opacity;
+  animation: river-current-drift 7.4s ease-in-out infinite;
+}
+
+.river-current-slow {
+  opacity: 0.62;
+  animation-duration: 9.6s;
+  animation-delay: -2.1s;
+}
+
+.river-current-reverse {
+  opacity: 0.54;
+  animation-name: river-current-drift-reverse;
+  animation-duration: 8.4s;
+  animation-delay: -1.2s;
+}
+
+.river-mist {
+  will-change: transform, opacity;
+  animation: river-mist 7.2s ease-in-out infinite;
+}
+
+@keyframes river-current-drift {
+  0%,
+  100% {
+    transform: translate3d(-10px, 0, 0);
+    opacity: 0.52;
+  }
+  50% {
+    transform: translate3d(10px, -0.6px, 0);
+    opacity: 0.96;
+  }
+}
+
+@keyframes river-current-drift-reverse {
+  0%,
+  100% {
+    transform: translate3d(10px, 0, 0);
+    opacity: 0.48;
+  }
+  50% {
+    transform: translate3d(-10px, 0.6px, 0);
+    opacity: 0.86;
+  }
+}
+
+@keyframes river-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.5px);
+  }
+}
+
+@keyframes river-mist {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translateX(-12px) scaleX(0.98);
+  }
+  50% {
+    opacity: 0.78;
+    transform: translateX(12px) scaleX(1.02);
+  }
+}

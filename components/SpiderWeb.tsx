@@ -1,15 +1,14 @@
-import Image from "next/image";
 import Link from "next/link";
 
 const nodeBase =
-  "absolute flex h-36 w-36 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-center text-sm font-semibold uppercase tracking-[0.2em] text-[var(--card-foreground)] shadow-[0_0_40px_rgba(253,123,65,0.25)] transition-transform duration-300";
+  "absolute flex h-44 w-44 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-center text-base font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)] shadow-[0_0_40px_rgba(253,123,65,0.25)] transition-transform duration-300";
 
 function ResumeIcon() {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-6 w-6"
+      className="h-10 w-10"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.6"
@@ -30,7 +29,7 @@ function LabIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-6 w-6"
+      className="h-10 w-10"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.6"
@@ -82,44 +81,94 @@ export default function SpiderWeb() {
           </svg>
         </div>
 
-        <Link
-          href="/resume#about"
-          aria-label="View about section"
-          className="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-4 text-center transition-transform duration-300 hover:scale-105"
-        >
-          <div className="relative h-44 w-44 overflow-hidden rounded-full border border-[var(--card-border)] bg-[var(--card-background)] shadow-[0_0_60px_rgba(253,123,65,0.3)]">
-            <Image
-              src="/profile.jpeg"
-              alt="Portrait of Yash Vora"
-              fill
-              className="object-cover"
-              priority
-            />
+        <div className="pointer-events-none absolute -bottom-12 left-1/2 z-[1] w-[100dvw] -translate-x-1/2">
+          <div className="river-flow">
+            <svg viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="riverBody" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.04)" />
+                  <stop offset="28%" stopColor="rgba(221,220,219,0.22)" />
+                  <stop offset="55%" stopColor="rgba(255,255,255,0.33)" />
+                  <stop offset="82%" stopColor="rgba(221,220,219,0.2)" />
+                  <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
+                </linearGradient>
+                <linearGradient id="riverCurrent" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+                  <stop offset="45%" stopColor="rgba(255,255,255,0.75)" />
+                  <stop offset="55%" stopColor="rgba(255,255,255,0.9)" />
+                  <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                </linearGradient>
+              </defs>
+
+              <g className="river-surface">
+                <path
+                  d="M0 74 C90 55 190 95 280 76 C365 58 455 102 548 74 C640 47 735 94 824 72 C895 55 948 62 1000 72 L1000 120 L0 120 Z"
+                  fill="url(#riverBody)"
+                />
+                <path
+                  className="river-current"
+                  d="M-20 74 C90 55 190 95 280 76 C365 58 455 102 548 74 C640 47 735 94 824 72 C895 55 948 62 1020 72"
+                  fill="none"
+                  stroke="url(#riverCurrent)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+                <path
+                  className="river-current river-current-slow"
+                  d="M-20 83 C98 63 201 100 300 84 C390 70 472 104 560 84 C657 62 739 101 838 84 C904 72 952 74 1020 84"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.5)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <path
+                  className="river-current river-current-reverse"
+                  d="M-20 90 C98 72 198 106 286 93 C378 78 457 111 550 92 C652 70 734 108 828 90 C908 76 956 82 1020 92"
+                  fill="none"
+                  stroke="rgba(221,220,219,0.42)"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </g>
+              <ellipse
+                className="river-mist"
+                cx="500"
+                cy="94"
+                rx="410"
+                ry="18"
+                fill="rgba(255,255,255,0.14)"
+              />
+            </svg>
           </div>
-          <div className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
-            Yash Vora
-          </div>
-        </Link>
+        </div>
 
         <Link
           href="/resume"
-          className={`${nodeBase} left-[6%] top-[30%] z-10 flex-col gap-2 hover:scale-105`}
+          className={`${nodeBase} group left-[6%] top-[20%] z-10 flex-col gap-2 hover:scale-105`}
         >
           <ResumeIcon />
           <span>Resume</span>
-          <span className="text-[0.6rem] font-normal text-[var(--card-muted)]">
-            Click to view
+
+          <span className="pointer-events-none absolute left-[calc(100%-0.25rem)] top-0 z-20 translate-x-1 -translate-y-5 rotate-[-8deg] scale-90 opacity-0 transition-all duration-300 group-hover:translate-x-3 group-hover:-translate-y-9 group-hover:rotate-[-4deg] group-hover:scale-100 group-hover:opacity-100">
+            <span className="absolute -left-2 bottom-4 h-5 w-5 rotate-45 border-b-2 border-l-2 border-[var(--card-border)] bg-[var(--card-background)]" />
+            <span className="relative block whitespace-nowrap rounded-[1.8rem] border-2 border-[var(--card-border)] bg-[var(--card-background)] px-6 py-3 text-[0.9rem] font-semibold normal-case tracking-normal text-[var(--card-foreground)] shadow-[0_14px_30px_rgba(0,0,0,0.26)] sm:text-[1rem]">
+              Chat with my resume!
+            </span>
           </span>
         </Link>
 
         <div
-          className={`${nodeBase} right-[6%] top-[30%] z-10 flex-col gap-2 text-[var(--card-muted)] opacity-70 grayscale transition-opacity duration-300 hover:scale-105`}
+          className={`${nodeBase} group right-[6%] top-[20%] z-10 flex-col gap-2 text-[var(--card-muted)] opacity-70 grayscale transition-opacity duration-300 hover:scale-105`}
           aria-disabled="true"
         >
           <LabIcon />
           <span>Lab</span>
-          <span className="text-[0.6rem] font-normal text-[var(--card-muted)]">
-            Coming soon
+
+          <span className="pointer-events-none absolute right-[calc(100%-0.25rem)] top-0 z-20 -translate-x-1 -translate-y-5 rotate-[8deg] scale-90 opacity-0 transition-all duration-300 group-hover:-translate-x-3 group-hover:-translate-y-9 group-hover:rotate-[4deg] group-hover:scale-100 group-hover:opacity-100">
+            <span className="absolute -right-2 bottom-4 h-5 w-5 rotate-45 border-r-2 border-t-2 border-[var(--card-border)] bg-[var(--card-background)]" />
+            <span className="relative block whitespace-nowrap rounded-[1.8rem] border-2 border-[var(--card-border)] bg-[var(--card-background)] px-6 py-3 text-[0.9rem] font-semibold normal-case tracking-normal text-[var(--card-foreground)] shadow-[0_14px_30px_rgba(0,0,0,0.26)] sm:text-[1rem]">
+              Coming soon
+            </span>
           </span>
         </div>
       </div>

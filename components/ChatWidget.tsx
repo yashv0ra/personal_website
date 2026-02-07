@@ -13,11 +13,43 @@ const suggestedQuestions = [
   "Tell me more about Yash's Hyphen experience.",
 ];
 
-export default function ChatWidget() {
+type ChatWidgetVariant = "floating" | "panel";
+
+function SendIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path
+        d="M3 11.8 20.8 4.2 13.2 22l-2.4-7.8L3 11.8Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M10.8 14.2 20.8 4.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export default function ChatWidget({
+  variant = "floating",
+}: {
+  variant?: ChatWidgetVariant;
+}) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const isFloating = variant === "floating";
+  const isOpen = isFloating ? open : true;
+  const containerClassName = isFloating
+    ? "fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3"
+    : "fixed bottom-6 right-6 z-50 flex flex-col items-end";
+  const panelWidthClassName = "w-[380px] sm:w-[420px]";
 
   const quickReplies = useMemo(() => {
     const asked = new Set(messages.map((message) => message.text));
@@ -77,23 +109,28 @@ export default function ChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-      {open ? (
-        <div className="w-[380px] overflow-hidden rounded-3xl border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_24px_80px_rgba(60,64,68,0.28)] sm:w-[420px]">
+    <div className={containerClassName}>
+      {isOpen ? (
+        <div
+          className={`overflow-hidden rounded-3xl border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_24px_80px_rgba(60,64,68,0.28)] ${
+            panelWidthClassName
+          }`}
+        >
           <div className="flex items-center justify-between border-b border-[var(--card-border)] px-4 py-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-[var(--card-muted)]">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[var(--card-muted)]">
                 Chat with resume
               </p>
-              <p className="text-sm font-semibold">Ask about Yash</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="rounded-full border border-[var(--card-border)] px-2 py-1 text-xs uppercase tracking-[0.2em] text-[var(--card-muted)] hover:text-[var(--card-foreground)]"
-            >
-              Close
-            </button>
+            {isFloating ? (
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-full border border-[var(--card-border)] px-2 py-1 text-xs uppercase tracking-[0.2em] text-[var(--card-muted)] hover:text-[var(--card-foreground)]"
+              >
+                Close
+              </button>
+            ) : null}
           </div>
 
           <div className="max-h-[360px] space-y-3 overflow-y-auto px-4 py-4 text-sm text-[var(--card-muted)]">
@@ -152,38 +189,41 @@ export default function ChatWidget() {
             <button
               type="submit"
               disabled={isLoading}
-              className="rounded-full bg-[var(--accent-orange)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white"
+              aria-label="Send message"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-orange)] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55"
             >
-              Send
+              <SendIcon />
             </button>
           </form>
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        aria-label="Open chat"
-        className="group flex h-12 w-12 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_18px_60px_rgba(60,64,68,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_70px_rgba(60,64,68,0.32)]"
-      >
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="h-6 w-6"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
+      {isFloating ? (
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-label="Open chat"
+          className="group flex h-12 w-12 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_18px_60px_rgba(60,64,68,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_70px_rgba(60,64,68,0.32)]"
         >
-          <path
-            d="M12 3.5a8.5 8.5 0 0 1 7.7 12.3A8.5 8.5 0 0 1 12 20.5H7.5L4 23v-4.5A8.5 8.5 0 0 1 12 3.5Z"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="8.5" cy="12" r="1" fill="currentColor" />
-          <circle cx="12" cy="12" r="1" fill="currentColor" />
-          <circle cx="15.5" cy="12" r="1" fill="currentColor" />
-        </svg>
-      </button>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          >
+            <path
+              d="M12 3.5a8.5 8.5 0 0 1 7.7 12.3A8.5 8.5 0 0 1 12 20.5H7.5L4 23v-4.5A8.5 8.5 0 0 1 12 3.5Z"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <circle cx="8.5" cy="12" r="1" fill="currentColor" />
+            <circle cx="12" cy="12" r="1" fill="currentColor" />
+            <circle cx="15.5" cy="12" r="1" fill="currentColor" />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }

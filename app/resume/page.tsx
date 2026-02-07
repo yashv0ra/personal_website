@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Resume from "@/components/Resume";
+import ChatWidget from "@/components/ChatWidget";
 
 export default function ResumePage() {
   return (
@@ -20,6 +21,7 @@ export default function ResumePage() {
           <Resume />
         </div>
       </div>
+      <ChatWidget variant="panel" />
     </div>
   );
 }

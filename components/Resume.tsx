@@ -18,32 +18,22 @@ type TimelineSectionConfig = {
   items: TimelineItem[];
 };
 
+const lightTone = {
+  card: "bg-[var(--card-background)] text-[var(--card-foreground)]",
+  border: "border-[var(--card-border)]",
+  muted: "text-[var(--card-muted)]",
+  line: "bg-[var(--card-border)]",
+  item: "bg-white/90 border-[var(--card-border)]",
+  badge: "border-[var(--card-border)] text-[var(--card-muted)] bg-white/80",
+  dotOuter:
+    "border-[var(--card-border)] bg-[var(--accent-charcoal)] shadow-[0_0_16px_rgba(253,123,65,0.35)]",
+  dotInner: "bg-[var(--accent-orange)]",
+  hint: "text-[var(--muted)]",
+} as const;
+
 const timelineTones = {
-  light: {
-    card: "bg-[var(--card-background)] text-[var(--card-foreground)]",
-    border: "border-[var(--card-border)]",
-    muted: "text-[var(--card-muted)]",
-    line: "bg-[var(--card-border)]",
-    item: "bg-white/90 border-[var(--card-border)]",
-    badge: "border-[var(--card-border)] text-[var(--card-muted)] bg-white/80",
-    dotOuter:
-      "border-[var(--card-border)] bg-[var(--accent-charcoal)] shadow-[0_0_16px_rgba(253,123,65,0.35)]",
-    dotInner: "bg-[var(--accent-orange)]",
-    hint: "text-[var(--muted)]",
-  },
-  ivory: {
-    card: "bg-[var(--accent-ivory)] text-[var(--accent-charcoal)]",
-    border: "border-[var(--accent-charcoal)]/20",
-    muted: "text-[var(--accent-charcoal)]/70",
-    line: "bg-[var(--accent-charcoal)]/25",
-    item: "bg-white/75 border-[var(--accent-charcoal)]/20",
-    badge:
-      "border-[var(--accent-charcoal)]/25 text-[var(--accent-charcoal)]/70 bg-white/60",
-    dotOuter:
-      "border-[var(--accent-charcoal)]/35 bg-[var(--accent-charcoal)] shadow-[0_0_16px_rgba(253,123,65,0.3)]",
-    dotInner: "bg-[var(--accent-orange)]",
-    hint: "text-[var(--accent-charcoal)]/60",
-  },
+  light: lightTone,
+  ivory: lightTone,
 } as const;
 
 const timelineSections: TimelineSectionConfig[] = [
@@ -55,7 +45,7 @@ const timelineSections: TimelineSectionConfig[] = [
   },
   {
     title: "Leadership and Involvement",
-    tone: "ivory",
+    tone: "light",
     items: resume.leadership,
   },
 ];

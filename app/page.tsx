@@ -1,16 +1,31 @@
 import SpiderWeb from "@/components/SpiderWeb";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
     <div className="dot-grid min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center gap-8 px-6 py-16">
         <div className="text-center">
-          <p className="text-base uppercase tracking-[0.5em] text-[var(--muted)]">
+          <Link
+            href="/resume#about"
+            aria-label="View about section"
+            className="relative mx-auto mb-5 block h-36 w-36 overflow-hidden rounded-full border border-[var(--card-border)] bg-[var(--card-background)] shadow-[0_0_60px_rgba(253,123,65,0.3)] transition-transform duration-300 hover:scale-105 sm:h-40 sm:w-40"
+          >
+            <Image
+              src="/profile.jpeg"
+              alt="Portrait of Yash Vora"
+              fill
+              className="object-cover"
+              priority
+            />
+          </Link>
+          <h1 className="text-5xl font-semibold tracking-tight sm:text-6xl">
             Yash Vora
-          </p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-            Product-minded engineer building thoughtful systems.
           </h1>
+          <p className="mt-4 text-lg text-[var(--muted)] sm:text-2xl">
+            Blending business acumen with technical expertise to best solve complex open-ended issues.
+          </p>
         </div>
         <SpiderWeb />
       </main>
