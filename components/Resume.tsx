@@ -116,9 +116,7 @@ function TimelineSection({
                         {item.subtitle}
                       </p>
                     </div>
-                    <span
-                      className={`rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] ${styles.badge}`}
-                    >
+                    <span className={`text-sm ${styles.muted}`}>
                       {item.date}
                     </span>
                   </div>
