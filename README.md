@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Personal Website + Resume Assistant
 
-## Getting Started
+This is a Next.js personal website for Yash Vora with an interactive resume and an LLM-backed chat assistant.
 
-First, run the development server:
+## What The App Does
+
+- Landing page (`/`) with profile intro and interactive navigation.
+- Resume page (`/resume`) with structured sections for:
+  - About
+  - Experience timeline
+  - Leadership and involvement
+  - Education
+  - Skills
+  - Ask Me About
+- Embedded resume chat panel on the resume page:
+  - Sends questions to `/api/chat`
+  - Supports quick suggested questions
+  - Supports minimize/expand controls
+  - Shows a timed nudge popup: `try talking with an LLM trained on my experience!`
+- Chat responses are constrained to the resume context and generated through Groq's OpenAI-compatible chat API.
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Groq API (server-side via `app/api/chat/route.ts`)
+- Optional OCR resume sync via `tesseract.js`
+
+## Project Structure
+
+- `app/page.tsx`: Home/landing page
+- `app/resume/page.tsx`: Resume page + chat widget mount
+- `app/api/chat/route.ts`: Server route that calls Groq
+- `components/Resume.tsx`: Resume rendering UI
+- `components/ChatWidget.tsx`: Chat UI behavior and nudge popup
+- `lib/resume.ts`: Resume typing + LLM context builder
+- `data/resume.json`: Canonical resume content used by UI and chat context
+- `scripts/extract-resume.mjs`: OCR + parser to update resume data from `public/resume.png`
+
+## Environment Variables
+
+Create `.env.local`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+GROQ_API_KEY=your_groq_api_key
+# Optional:
+# GROQ_MODEL=llama-3.1-8b-instant
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`GROQ_API_KEY` is required for chat. Without it, `/api/chat` returns a server error message.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Local Development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000).
 
-To learn more about Next.js, take a look at the following resources:
+## Resume Data Flow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `data/resume.json` is the primary source for displayed resume content.
+- `lib/resume.ts` turns that JSON into a plain-text context block for the LLM.
+- `npm run resume:sync` will:
+  - OCR `public/resume.png` (if present)
+  - Parse key resume sections
+  - Update `data/resume.json`
+  - Write extracted raw text to `data/resume.raw.txt`
+- `npm run build` automatically runs `resume:sync` first (`prebuild` hook).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+If `public/resume.png` is missing, sync gracefully skips OCR and still ensures `about` fields are populated.
 
-## Deploy on Vercel
+## API
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### `POST /api/chat`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Request body:
+
+```json
+{
+  "messages": [
+    { "role": "user", "content": "Tell me about Yash's Apple internship." }
+  ]
+}
+```
+
+Response body:
+
+```json
+{
+  "message": "..."
+}
+```
+
+Behavior:
+
+- Prepends two system messages:
+  - instruction prompt (plain-text, concise, resume-only answers)
+  - generated resume context from `data/resume.json`
+- Forwards to Groq at `https://api.groq.com/openai/v1/chat/completions`
+
+## NPM Scripts
+
+- `npm run dev`: Start local dev server
+- `npm run lint`: Run ESLint
+- `npm run resume:sync`: OCR/parse resume into JSON data
+- `npm run build`: Run `resume:sync`, then production build
+- `npm run start`: Start production server

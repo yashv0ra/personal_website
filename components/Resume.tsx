@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { resume } from "@/lib/resume";
+import FloatingTermsBox from "@/components/FloatingTermsBox";
 
 type TimelineItem = {
   title: string;
@@ -48,6 +49,25 @@ const timelineSections: TimelineSectionConfig[] = [
     tone: "light",
     items: resume.leadership,
   },
+];
+
+function splitCsvTerms(value: string): string[] {
+  return value
+    .split(",")
+    .map((term) => term.trim())
+    .filter((term) => term.length > 0);
+}
+
+const floatingTerms = [
+  ...splitCsvTerms(resume.skills.technical).map((label) => ({
+    label,
+    category: "Technical Skill" as const,
+  })),
+  ...splitCsvTerms(resume.skills.business).map((label) => ({
+    label,
+    category: "Business Skill" as const,
+  })),
+  ...resume.ask.map((label) => ({ label, category: "Ask Me About" as const })),
 ];
 
 function ResumeCard({
@@ -198,6 +218,13 @@ export default function Resume() {
         </ResumeCard>
       </section>
 
+      <section className="space-y-3">
+        <h2 className="resume-heading">Learn more about me</h2>
+        <ResumeCard className="p-6 sm:p-8">
+          <FloatingTermsBox terms={floatingTerms} />
+        </ResumeCard>
+      </section>
+
       {timelineSections.map((section) => (
         <TimelineSection key={section.title} {...section} />
       ))}
@@ -235,41 +262,6 @@ export default function Resume() {
         </ResumeCard>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="space-y-3">
-          <h2 className="resume-heading">Skills</h2>
-          <ResumeCard className="text-sm text-[var(--card-muted)]">
-            <p>
-              <span className="font-semibold text-[var(--card-foreground)]">
-                Technical:
-              </span>{" "}
-              {resume.skills.technical}
-            </p>
-            <p className="mt-2">
-              <span className="font-semibold text-[var(--card-foreground)]">
-                Business:
-              </span>{" "}
-              {resume.skills.business}
-            </p>
-          </ResumeCard>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="resume-heading">Ask Me About</h2>
-          <ResumeCard className="text-sm text-[var(--card-muted)]">
-            <div className="flex flex-wrap gap-2">
-              {resume.ask.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-[var(--card-border)] bg-white/80 px-4 py-1 text-xs font-medium text-[var(--card-muted)]"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-          </ResumeCard>
-        </section>
-      </div>
     </div>
   );
 }

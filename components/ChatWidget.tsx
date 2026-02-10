@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RESUME_PILL_SELECT_EVENT, type ResumePillSelectDetail } from "@/lib/chatEvents";
 
 type Message = {
   id: string;
@@ -42,10 +43,11 @@ export default function ChatWidget({
 }) {
   const [open, setOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [showResumeNudge, setShowResumeNudge] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const messagesRef = useRef<Message[]>([]);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const isFloating = variant === "floating";
   const isOpen = isFloating ? open : true;
   const containerClassName = "fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3";
@@ -60,33 +62,13 @@ export default function ChatWidget({
     return suggestedQuestions.filter((question) => !asked.has(question));
   }, [messages]);
 
-  function dismissResumeNudge() {
-    setShowResumeNudge(false);
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem("resume-chat-nudge-dismissed", "1");
-    }
-  }
+  const dismissResumeNudge = useCallback(() => {}, []);
 
   useEffect(() => {
-    if (variant !== "panel") {
-      return;
-    }
-    if (typeof window === "undefined") {
-      return;
-    }
-    if (window.sessionStorage.getItem("resume-chat-nudge-dismissed") === "1") {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setShowResumeNudge(true);
-    }, 12000);
+    messagesRef.current = messages;
+  }, [messages]);
 
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [variant]);
-
-  async function sendMessage(text: string) {
+  const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) {
       return;
@@ -97,7 +79,9 @@ export default function ChatWidget({
       role: "user",
       text: trimmed,
     };
-    setMessages((prev) => [...prev, userMessage]);
+    const messageHistory = [...messagesRef.current, userMessage];
+    messagesRef.current = messageHistory;
+    setMessages(messageHistory);
     setInput("");
     setIsLoading(true);
     try {
@@ -105,7 +89,7 @@ export default function ChatWidget({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map((message) => ({
+          messages: messageHistory.map((message) => ({
             role: message.role,
             content: message.text,
           })),
@@ -113,7 +97,10 @@ export default function ChatWidget({
       });
 
       if (!response.ok) {
-        throw new Error("Request failed");
+        const errorPayload = (await response.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(errorPayload.message ?? "Request failed");
       }
 
       const data = (await response.json()) as { message?: string };
@@ -124,46 +111,70 @@ export default function ChatWidget({
           data.message ??
           "Thanks for the question! I can share more about Yash’s experience.",
       };
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `assistant-${Date.now()}`,
-          role: "assistant",
-          text: "Sorry, I hit a snag connecting to the resume assistant.",
-        },
-      ]);
+      setMessages((prev) => {
+        const next = [...prev, assistantMessage];
+        messagesRef.current = next;
+        return next;
+      });
+    } catch (error) {
+      const fallbackText = "Sorry, I hit a snag connecting to the resume assistant.";
+      const errorText =
+        error instanceof Error && error.message.trim()
+          ? error.message.trim()
+          : fallbackText;
+      setMessages((prev) => {
+        const next = [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: "assistant" as const,
+            text: errorText,
+          },
+        ];
+        messagesRef.current = next;
+        return next;
+      });
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [dismissResumeNudge]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handlePillSelect = (event: Event) => {
+      const customEvent = event as CustomEvent<ResumePillSelectDetail>;
+      const label = customEvent.detail?.label?.trim();
+      if (!label) {
+        return;
+      }
+
+      dismissResumeNudge();
+      const autofill = `Please tell me about Yash's ${label}`;
+      setInput(autofill);
+      if (isFloating) {
+        setOpen(true);
+      }
+      setIsMinimized(false);
+      window.requestAnimationFrame(() => {
+        inputRef.current?.focus();
+        void sendMessage(autofill);
+      });
+    };
+
+    window.addEventListener(RESUME_PILL_SELECT_EVENT, handlePillSelect as EventListener);
+    return () => {
+      window.removeEventListener(RESUME_PILL_SELECT_EVENT, handlePillSelect as EventListener);
+    };
+  }, [dismissResumeNudge, isFloating, sendMessage]);
 
   return (
     <div className={containerClassName}>
-      {showResumeNudge && variant === "panel" ? (
-        <div className="relative w-[320px] max-w-[88vw] rounded-2xl border border-[var(--accent-orange)]/55 bg-gradient-to-r from-[var(--accent-orange)] to-[#ffa574] px-4 py-3 pr-11 text-white shadow-[0_20px_60px_rgba(253,123,65,0.4)]">
-          <p className="text-sm font-semibold">
-            try talking with an LLM trained on my experience!
-          </p>
-          <button
-            type="button"
-            onClick={dismissResumeNudge}
-            aria-label="Dismiss chat suggestion"
-            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-white/40 bg-white/10 text-sm font-semibold text-white transition hover:bg-white/20"
-          >
-            x
-          </button>
-        </div>
-      ) : null}
-
       {isOpen ? (
         <div
-          className={`overflow-hidden rounded-3xl border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_24px_80px_rgba(60,64,68,0.28)] ${
-            showResumeNudge ? "ring-2 ring-[var(--accent-orange)]/65" : ""
-          } ${
-            panelWidthClassName
-          }`}
+          className={`overflow-hidden rounded-3xl border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_24px_80px_rgba(60,64,68,0.28)] ${panelWidthClassName}`}
         >
           <div
             className={`flex items-center justify-between bg-gradient-to-r from-[var(--accent-orange)] to-[#ffa574] px-4 py-3 ${
@@ -253,6 +264,7 @@ export default function ChatWidget({
                 }}
               >
                 <input
+                  ref={inputRef}
                   value={input}
                   onChange={(event) => {
                     if (!input && event.target.value) {

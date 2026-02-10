@@ -39,6 +39,15 @@ body {
   background-size: 28px 28px;
 }
 
+.interactive-dot-field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 .resume-heading {
   border-bottom: 1px solid var(--card-border);
   padding-bottom: 0.35rem;

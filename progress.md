@@ -1,0 +1,52 @@
+Original prompt: Yes, that'd be great. Please create a simple block-style game in the small 3d vertical slice
+
+## 2026-02-09
+- Initialized a new 3D block-game vertical slice task.
+- Plan: create `/game` route, implement a Three.js block game with start/win/lose loop, and validate with the Playwright client script.
+- Implemented a first playable version:
+- Added `/game` route and linked it from home.
+- Added `components/game/BlockGame3D.tsx` with:
+- Start screen and restart loop.
+- WASD/arrow movement, jump, pause, fullscreen toggle, and deterministic `window.advanceTime(ms)`.
+- `window.render_game_to_text` for state introspection.
+- Win condition (touch summit goal cube) and lose condition (enemy collision or fall).
+- Added `three` dependency.
+- Moved game entry into Lab section:
+- Added `/lab` page rendering the 3D game.
+- Updated SpiderWeb Lab node from disabled state to an active link.
+- Updated home CTA to "Enter the Lab".
+- Updated start overlay button text to "Play".
+- Removed standalone `/game` route so Lab is the canonical game entry.
+- Validation completed:
+- Ran Playwright client against `/lab` with `--click-selector "#start-btn"` and action bursts.
+- Captured and reviewed screenshots under `output/web-game/lab-smoke`.
+- Captured start-screen screenshot under `output/web-game/lab-start` and confirmed Play button is visible.
+- Confirmed `window.render_game_to_text` outputs `mode: "start"` before play and `mode: "playing"` during active loop.
+- Ran `npm run lint` successfully.
+- Removed temporary Playwright screenshots/browser cache artifacts from workspace after validation.
+- Camera visibility fix in progress:
+- Replaced far isometric camera with a third-person follow camera that trails behind player facing direction.
+- Added camera look-ahead smoothing so the player remains centered and clearly visible while moving/jumping.
+- Added player-facing state to `render_game_to_text` for easier automated camera verification.
+- Camera fix validated:
+- Ran Playwright movement/jump loops in webpack dev mode and confirmed the player remains visible in third-person perspective.
+- Verified no new console errors on rerun (`output/web-game/camera-fix-rerun` had no `errors-*.json`).
+- Ran `npm run lint` after camera changes.
+- Tank control update in progress:
+- Switched controls to A/D turning and W/S forward/back movement.
+- Lowered turn sensitivity and added slightly slower reverse speed for control.
+- Updated start-screen control text to match the new key behavior.
+- Tank controls validated:
+- Ran Playwright control loops with turn + forward/back + jump actions and reviewed screenshots (`output/web-game/tank-controls-arrows`).
+- Verified heading changes over time in `render_game_to_text` while forward/back motion follows current facing.
+- No new `errors-*.json` generated in the final control validation run.
+- Ran `npm run lint` after the control update.
+- Third-person camera refinement:
+- Tightened camera into an over-the-shoulder third-person view (closer distance, lower height, slight shoulder offset, wider FOV).
+- Increased look-ahead to keep forward path readable while preserving player visibility.
+- Validated with Playwright gameplay loop and screenshot review (`output/web-game/third-person`), with no new error artifact files.
+- Ran `npm run lint` after camera refinement.
+
+### TODOs / Suggestions
+- Expand the Lab with a game chooser page if additional prototypes are added later.
+- Add a small score progression mechanic during movement to make faster runs more rewarding.

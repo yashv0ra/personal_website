@@ -64,6 +64,15 @@
   ],
   "leadership": [
     {
+      "title": "180 Degrees Consulting Purdue",
+      "subtitle": "Lead Project Manager",
+      "date": "Aug 2025 – Present",
+      "bullets": [
+        "Led a team of 6 consultants to integrate Tableau visualizations and Excel improvements for a local food bank.",
+        "Set and managed deadlines, resolved conflicts, and coordinated client and club relationships while training and mentoring PMs and planning club events."
+      ]
+    },
+    {
       "title": "National Society of Sales Engineers @ Purdue",
       "subtitle": "Co-Founder",
       "date": "Feb 2023 – Dec 2024",
@@ -86,14 +95,16 @@
     }
   ],
   "skills": {
-    "technical": "Java, Python, Arduino, MATLAB, Solidworks, SQL",
-    "business": "Salesforce CRM, Qualtrics, Adobe Suite"
+    "technical": "Python, Java, SQL, Arduino NFC, SolidWorks CAD, RAG Systems, Cursor/Codex",
+    "business": "Leadership, Excel, Stakeholder Management, Client Management, Conflict Resolution, Salesforce CRM, Tableau Analytics"
   },
   "ask": [
-    "Pets in Action With Shelters (PAWS)",
     "Badminton",
-    "Orientation Leader",
-    "AI Projects (Buildspace)",
-    "Study Abroad in Australia"
+    "PAWS Volunteering",
+    "3D Printing Business",
+    "Buildspace (SpeechAgent)",
+    "Study Abroad in Australia",
+    "Orientation Team Leader",
+    "Piano"
   ]
 }

@@ -1,11 +1,15 @@
+import InteractiveDotField from "@/components/InteractiveDotField";
 import SpiderWeb from "@/components/SpiderWeb";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="dot-grid min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center gap-8 px-6 py-16">
+    <div className="relative min-h-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
+      <InteractiveDotField />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),rgba(0,0,0,0.12)_55%,rgba(0,0,0,0.28))]" />
+
+      <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center gap-8 px-6 py-16">
         <div className="text-center">
           <Link
             href="/resume#about"

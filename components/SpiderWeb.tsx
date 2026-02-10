@@ -157,9 +157,10 @@ export default function SpiderWeb() {
           </span>
         </Link>
 
-        <div
-          className={`${nodeBase} group right-[6%] top-[20%] z-10 flex-col gap-2 text-[var(--card-muted)] opacity-70 grayscale transition-opacity duration-300 hover:scale-105`}
-          aria-disabled="true"
+        <Link
+          href="/lab"
+          className={`${nodeBase} group right-[6%] top-[20%] z-10 flex-col gap-2 hover:scale-105`}
+          aria-label="Open Lab section"
         >
           <LabIcon />
           <span>Lab</span>
@@ -167,10 +168,10 @@ export default function SpiderWeb() {
           <span className="pointer-events-none absolute right-[calc(100%-0.25rem)] top-0 z-20 -translate-x-1 -translate-y-5 rotate-[8deg] scale-90 opacity-0 transition-all duration-300 group-hover:-translate-x-3 group-hover:-translate-y-9 group-hover:rotate-[4deg] group-hover:scale-100 group-hover:opacity-100">
             <span className="absolute -right-2 bottom-4 h-5 w-5 rotate-45 border-r-2 border-t-2 border-[var(--card-border)] bg-[var(--card-background)]" />
             <span className="relative block whitespace-nowrap rounded-[1.8rem] border-2 border-[var(--card-border)] bg-[var(--card-background)] px-6 py-3 text-[0.9rem] font-semibold normal-case tracking-normal text-[var(--card-foreground)] shadow-[0_14px_30px_rgba(0,0,0,0.26)] sm:text-[1rem]">
-              Coming soon
+              Play the latest prototype
             </span>
           </span>
-        </div>
+        </Link>
       </div>
     </div>
   );
