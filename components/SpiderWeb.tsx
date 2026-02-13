@@ -1,14 +1,16 @@
 import Link from "next/link";
 
 const nodeBase =
-  "absolute flex h-44 w-44 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-center text-base font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)] shadow-[0_0_40px_rgba(253,123,65,0.25)] transition-transform duration-300";
+  "absolute hidden h-44 w-44 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-center text-base font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)] shadow-[0_0_40px_rgba(253,123,65,0.25)] transition-transform duration-300 md:flex";
+const mobileNodeBase =
+  "flex items-center gap-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] px-4 py-3 text-[var(--card-foreground)] shadow-[0_12px_30px_rgba(253,123,65,0.2)]";
 
-function ResumeIcon() {
+function ResumeIcon({ className = "h-10 w-10" }: { className?: string }) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-10 w-10"
+      className={className}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.6"
@@ -24,12 +26,12 @@ function ResumeIcon() {
   );
 }
 
-function LabIcon() {
+function LabIcon({ className = "h-10 w-10" }: { className?: string }) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-10 w-10"
+      className={className}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.6"
@@ -47,7 +49,38 @@ function LabIcon() {
 export default function SpiderWeb() {
   return (
     <div className="relative w-full max-w-5xl">
-      <div className="relative mx-auto h-[420px] w-full">
+      <div className="mx-auto w-full max-w-md md:hidden">
+        <div className="space-y-3 rounded-3xl border border-[var(--card-border)] bg-[var(--card-background)] p-4 text-[var(--card-foreground)] shadow-[0_20px_50px_rgba(60,64,68,0.24)]">
+          <Link href="/resume" className={`${mobileNodeBase} transition hover:scale-[1.01]`}>
+            <ResumeIcon className="h-8 w-8" />
+            <div className="text-left">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--card-foreground)]">
+                Resume
+              </p>
+              <p className="mt-1 text-xs text-[var(--card-muted)]">
+                Open the full resume and ask questions in chat.
+              </p>
+            </div>
+          </Link>
+          <div
+            className={`${mobileNodeBase} cursor-not-allowed opacity-85`}
+            aria-label="Lab section coming soon"
+            aria-disabled="true"
+          >
+            <LabIcon className="h-8 w-8" />
+            <div className="text-left">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--card-foreground)]">
+                Lab
+              </p>
+              <p className="mt-1 text-xs text-[var(--card-muted)]">
+                Coming soon.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative mx-auto hidden h-[420px] w-full md:block">
         <div className="absolute inset-0">
           <svg
             className="absolute inset-0 h-full w-full"
@@ -142,10 +175,7 @@ export default function SpiderWeb() {
           </div>
         </div>
 
-        <Link
-          href="/resume"
-          className={`${nodeBase} group left-[6%] top-[20%] z-10 flex-col gap-2 hover:scale-105`}
-        >
+        <Link href="/resume" className={`${nodeBase} group left-[6%] top-[20%] z-10 flex-col gap-2 hover:scale-105`}>
           <ResumeIcon />
           <span>Resume</span>
 

@@ -92,6 +92,7 @@ export default function FloatingTermsBox({ terms }: FloatingTermsBoxProps) {
   const previousTimestampRef = useRef<number | null>(null);
   const hoveredIndexRef = useRef<number | null>(null);
   const pinnedIndexRef = useRef<number | null>(null);
+  const [isCompact, setIsCompact] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [pinnedIndex, setPinnedIndex] = useState<number | null>(null);
 
@@ -114,9 +115,28 @@ export default function FloatingTermsBox({ terms }: FloatingTermsBoxProps) {
     window.dispatchEvent(new CustomEvent<ResumePillSelectDetail>(RESUME_PILL_SELECT_EVENT, { detail }));
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const syncCompactMode = (event?: MediaQueryListEvent) => {
+      if (event) {
+        setIsCompact(event.matches);
+        return;
+      }
+      setIsCompact(mediaQuery.matches);
+    };
+
+    syncCompactMode();
+    mediaQuery.addEventListener("change", syncCompactMode);
+    return () => mediaQuery.removeEventListener("change", syncCompactMode);
+  }, []);
+
   const initializeBubbles = useCallback(() => {
     const arena = arenaRef.current;
-    if (!arena || terms.length === 0) {
+    if (!arena || terms.length === 0 || isCompact) {
       bubbleStatesRef.current = [];
       return;
     }
@@ -171,9 +191,14 @@ export default function FloatingTermsBox({ terms }: FloatingTermsBoxProps) {
 
     bubbleStatesRef.current = placed;
     previousTimestampRef.current = null;
-  }, [terms]);
+  }, [isCompact, terms]);
 
   useEffect(() => {
+    if (isCompact) {
+      bubbleStatesRef.current = [];
+      return undefined;
+    }
+
     initializeBubbles();
 
     const arena = arenaRef.current;
@@ -187,10 +212,10 @@ export default function FloatingTermsBox({ terms }: FloatingTermsBoxProps) {
 
     observer.observe(arena);
     return () => observer.disconnect();
-  }, [initializeBubbles]);
+  }, [initializeBubbles, isCompact]);
 
   useEffect(() => {
-    if (!hasTerms) {
+    if (!hasTerms || isCompact) {
       return undefined;
     }
 
@@ -261,7 +286,7 @@ export default function FloatingTermsBox({ terms }: FloatingTermsBoxProps) {
       }
       animationFrameRef.current = null;
     };
-  }, [hasTerms]);
+  }, [hasTerms, isCompact]);
 
   const handleArenaPointerDown = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -272,6 +297,29 @@ export default function FloatingTermsBox({ terms }: FloatingTermsBoxProps) {
     },
     [],
   );
+
+  if (isCompact) {
+    return (
+      <div className="rounded-2xl border border-[var(--card-border)] bg-white/85 p-3 sm:p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--card-muted)]">
+          Tap any topic to ask chat
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {terms.map((term) => (
+            <button
+              type="button"
+              key={`${term.category}-${term.label}`}
+              className={`${bubbleStyles[term.category]} inline-flex items-center rounded-full border px-3 py-2 text-xs font-semibold leading-tight`}
+              onClick={() => dispatchPillSelect(term.label)}
+              aria-label={`${term.label} (${term.category})`}
+            >
+              {term.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

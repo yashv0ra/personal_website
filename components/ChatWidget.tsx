@@ -50,12 +50,13 @@ export default function ChatWidget({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const isFloating = variant === "floating";
   const isOpen = isFloating ? open : true;
-  const containerClassName = "fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3";
+  const containerClassName =
+    "fixed bottom-3 right-3 z-50 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6 sm:max-w-none";
   const panelWidthClassName = isMinimized
-    ? "w-[220px] sm:w-[240px]"
-    : "w-[380px] sm:w-[420px]";
+    ? "w-[min(calc(100vw-1.5rem),240px)] sm:w-[240px]"
+    : "w-[min(calc(100vw-1.5rem),420px)] sm:w-[420px]";
   const headerActionClassName =
-    "rounded-full border border-white/45 bg-white/15 px-2 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-white/25";
+    "rounded-full border border-white/45 bg-white/15 px-2 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-white/25 sm:text-xs sm:tracking-[0.16em]";
 
   const quickReplies = useMemo(() => {
     const asked = new Set(messages.map((message) => message.text));
@@ -152,7 +153,7 @@ export default function ChatWidget({
       }
 
       dismissResumeNudge();
-      const autofill = `Please tell me about Yash's ${label}`;
+      const autofill = `Tell me more about Yash's experience with ${label}`;
       setInput(autofill);
       if (isFloating) {
         setOpen(true);
@@ -182,7 +183,7 @@ export default function ChatWidget({
             }`}
           >
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.08em] text-white">
+              <p className="text-xs font-bold uppercase tracking-[0.06em] text-white sm:text-sm sm:tracking-[0.08em]">
                 Chat with resume
               </p>
             </div>
@@ -216,7 +217,7 @@ export default function ChatWidget({
 
           {isMinimized ? null : (
             <>
-              <div className="max-h-[360px] space-y-3 overflow-y-auto px-4 py-4 text-sm text-[var(--card-muted)]">
+              <div className="max-h-[48dvh] space-y-3 overflow-y-auto px-4 py-4 text-[0.95rem] text-[var(--card-muted)] sm:max-h-[360px] sm:text-sm">
                 {messages.length === 0 ? (
                   <p>
                     Ask a question about Yash’s experience, impact, and strengths.
@@ -225,7 +226,7 @@ export default function ChatWidget({
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`rounded-2xl px-3 py-2 ${
+                    className={`break-words rounded-2xl px-3 py-2 ${
                       message.role === "user"
                         ? "ml-auto bg-[var(--accent-orange)]/20 text-[var(--card-foreground)]"
                         : "mr-auto bg-white/70 text-[var(--accent-charcoal)]"
@@ -248,7 +249,7 @@ export default function ChatWidget({
                       key={question}
                       type="button"
                       onClick={() => sendMessage(question)}
-                      className="rounded-full border border-[var(--card-border)] bg-white/80 px-3 py-1 text-sm text-[var(--card-muted)] hover:border-[var(--accent-orange)]/45 hover:bg-[var(--accent-orange)]/20"
+                      className="rounded-full border border-[var(--card-border)] bg-white/80 px-3 py-1 text-xs text-[var(--card-muted)] hover:border-[var(--accent-orange)]/45 hover:bg-[var(--accent-orange)]/20 sm:text-sm"
                     >
                       {question}
                     </button>
@@ -273,7 +274,7 @@ export default function ChatWidget({
                     setInput(event.target.value);
                   }}
                   placeholder="Ask a question..."
-                  className="flex-1 rounded-full border border-[var(--card-border)] bg-white/80 px-3 py-2 text-sm text-[var(--accent-charcoal)] placeholder:text-[var(--accent-charcoal)]/60 focus:outline-none"
+                  className="flex-1 rounded-full border border-[var(--card-border)] bg-white/80 px-3 py-2 text-[0.95rem] text-[var(--accent-charcoal)] placeholder:text-[var(--accent-charcoal)]/60 focus:outline-none sm:text-sm"
                 />
                 <button
                   type="submit"
@@ -301,7 +302,7 @@ export default function ChatWidget({
             setOpen(true);
           }}
           aria-label={isOpen ? "Close chat" : "Open chat"}
-          className="group flex h-12 w-12 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_18px_60px_rgba(60,64,68,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_70px_rgba(60,64,68,0.32)]"
+          className="group flex h-11 w-11 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_18px_60px_rgba(60,64,68,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_70px_rgba(60,64,68,0.32)] sm:h-12 sm:w-12"
         >
           <svg
             aria-hidden="true"
