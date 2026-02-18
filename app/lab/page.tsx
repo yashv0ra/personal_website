@@ -820,7 +820,9 @@ function PaintCharadesProject() {
               <button
                 type="button"
                 onClick={handleUndo}
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
+                title="Undo (Ctrl+Z)"
+                aria-label="Undo"
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)]"
                 disabled={history.length <= 1}
               >
                 Undo
@@ -828,7 +830,9 @@ function PaintCharadesProject() {
               <button
                 type="button"
                 onClick={handleRedo}
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
+                title="Redo"
+                aria-label="Redo"
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)]"
                 disabled={redoHistory.length === 0}
               >
                 Redo
@@ -836,14 +840,18 @@ function PaintCharadesProject() {
               <button
                 type="button"
                 onClick={handleClearCanvas}
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
+                title="Clear canvas"
+                aria-label="Clear canvas"
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)]"
               >
                 Clear
               </button>
               <button
                 type="button"
                 onClick={handleSaveImage}
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
+                title="Save drawing"
+                aria-label="Save drawing"
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)]"
               >
                 Save
               </button>
@@ -854,7 +862,9 @@ function PaintCharadesProject() {
                 type="button"
                 onClick={handleCopySelection}
                 disabled={!hasSelection}
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+                title="Copy selected area"
+                aria-label="Copy selected area"
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
               >
                 Copy
               </button>
@@ -862,7 +872,9 @@ function PaintCharadesProject() {
                 type="button"
                 onClick={handleCutSelection}
                 disabled={!hasSelection}
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+                title="Cut selected area"
+                aria-label="Cut selected area"
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
               >
                 Cut
               </button>
@@ -870,7 +882,9 @@ function PaintCharadesProject() {
                 type="button"
                 onClick={handlePasteSelection}
                 disabled={!clipboardImage}
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+                title="Paste"
+                aria-label="Paste"
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
               >
                 Paste
               </button>
@@ -878,19 +892,23 @@ function PaintCharadesProject() {
                 type="button"
                 onClick={handleDeleteSelection}
                 disabled={!hasSelection}
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+                title="Delete selected area"
+                aria-label="Delete selected area"
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
               >
                 Delete
               </button>
             </div>
-            <button
-              type="button"
-              onClick={handleFillSelection}
-              disabled={!hasSelection}
-              className="w-full rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-            >
-              Fill region
-            </button>
+              <button
+                type="button"
+                onClick={handleFillSelection}
+                disabled={!hasSelection}
+                title="Fill selected area"
+                aria-label="Fill selected area"
+                className="w-full rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+              >
+                Fill region
+              </button>
           </div>
         </aside>
 
