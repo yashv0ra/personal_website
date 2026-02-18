@@ -1,43 +1,88 @@
-# Personal Website + Resume Assistant
+# Yash Vora — Personal Website
 
-This is a Next.js personal website for Yash Vora with an interactive resume and an LLM-backed chat assistant.
+This repository contains a **Next.js personal website** that highlights Yash’s profile, interactive resume, and a lab experiment where users sketch and get AI-generated guesses.
 
-## What The App Does
+## Website Functionality
 
-- Landing page (`/`) with profile intro and interactive navigation.
-- Resume page (`/resume`) with structured sections for:
+### 1) Home page (`/`)
+- Presents a profile landing page with:
+  - avatar + headline intro
+  - social links (auto-read from resume data)
+  - animated interactive visual background and navigation web
+- Main navigation routes users to:
+  - **Resume** (`/resume`)
+  - **Lab** (`/lab`)
+
+### 2) Resume page (`/resume`)
+- Displays resume content sourced from `data/resume.json`:
   - About
   - Experience timeline
-  - Leadership and involvement
+  - Leadership and involvement timeline
   - Education
-  - Skills
-  - Ask Me About
-- Embedded resume chat panel on the resume page:
-  - Sends questions to `/api/chat`
-  - Supports quick suggested questions
-  - Supports minimize/expand controls
-  - Shows a timed nudge popup: `try talking with an LLM trained on my experience!`
-- Chat responses are constrained to the resume context and generated through Groq's OpenAI-compatible chat API.
+- Includes a **Download Resume** action (`/resume.png`).
+- Includes a **"Learn more about me" floating terms arena**:
+  - moving skill/topic pills (technical skills, business skills, ask-me-about topics)
+  - selecting a pill dispatches an event that auto-prompts the chat assistant
+- Includes an embedded **resume chat panel** (`ChatWidget`):
+  - accepts custom questions
+  - has quick suggested questions
+  - supports minimize/expand
+  - calls `POST /api/chat`
 
-## Tech Stack
+### 3) Lab page (`/lab`) — Paint Charades
+- Provides an interactive drawing studio with a canvas and tools:
+  - brush, eraser, line, rectangle, circle, select
+  - color palette + brush size
+  - undo/redo, clear, save
+  - region actions (copy, paste, fill, delete)
+- Has a **Charades Mode** toggle that constrains advanced tools for gameplay.
+- Sends canvas image data to `POST /api/lab/vision-guess` to get an AI guess.
+- Surfaces:
+  - guess text + confidence
+  - token usage metadata
+  - provider rate metadata
+  - local daily guess budget + cooldown feedback
+
+## API Behavior
+
+### `POST /api/chat`
+- Uses the incoming conversation history.
+- Prepends system instructions and a generated resume context (`buildResumeContext`).
+- Calls Groq’s OpenAI-compatible chat completion endpoint.
+- Enforces concise, resume-grounded responses with anti-fabrication guidance and query grounding rules.
+
+### `POST /api/lab/vision-guess`
+- Accepts a PNG data URL from the drawing canvas.
+- Calls Gemini Vision (`generateContent`) with a charades-style prompt.
+- Returns:
+  - model name
+  - formatted guess text
+  - token usage
+  - provider rate-limit fields (if available)
+  - local rate-limit state (daily quota + cooldown)
+- Applies in-memory per-client local guards before provider calls.
+
+## Resume Data Model + Sync
+
+- Canonical resume data lives in `data/resume.json`.
+- `lib/resume.ts`:
+  - exports typed resume data for UI
+  - builds plain-text context for LLM prompts
+- `npm run resume:sync` executes `scripts/extract-resume.mjs` to:
+  - OCR from `public/resume.png` (if present)
+  - parse sections into `data/resume.json`
+  - write raw OCR text to `data/resume.raw.txt`
+- `prebuild` runs this sync automatically before `next build`.
+
+## Stack
 
 - Next.js 16 (App Router)
 - React 19
 - TypeScript
 - Tailwind CSS 4
-- Groq API (server-side via `app/api/chat/route.ts`)
-- Optional OCR resume sync via `tesseract.js`
-
-## Project Structure
-
-- `app/page.tsx`: Home/landing page
-- `app/resume/page.tsx`: Resume page + chat widget mount
-- `app/api/chat/route.ts`: Server route that calls Groq
-- `components/Resume.tsx`: Resume rendering UI
-- `components/ChatWidget.tsx`: Chat UI behavior and nudge popup
-- `lib/resume.ts`: Resume typing + LLM context builder
-- `data/resume.json`: Canonical resume content used by UI and chat context
-- `scripts/extract-resume.mjs`: OCR + parser to update resume data from `public/resume.png`
+- Groq API (resume chat)
+- Google Gemini Vision API (lab guessing)
+- Tesseract.js (optional resume OCR sync)
 
 ## Environment Variables
 
@@ -46,17 +91,18 @@ Create `.env.local`:
 ```bash
 GROQ_API_KEY=your_groq_api_key
 GEMINI_API_KEY=your_gemini_api_key
-# VISION_MODEL=gemini-2.5-flash-lite
-# Optional:
+# Optional
 # GROQ_MODEL=llama-3.1-8b-instant
+# VISION_MODEL=gemini-2.5-flash-lite
 # VISION_GUESS_DAILY_LIMIT=30
 # VISION_GUESS_MIN_INTERVAL_MS=10000
 ```
 
-`GROQ_API_KEY` is required for chat. Without it, `/api/chat` returns a server error message.
-`GEMINI_API_KEY` is required for the Lab Paint Charades feature (`/api/lab/vision-guess`).
-`VISION_GUESS_DAILY_LIMIT` controls how many guesses each client may request per local day.  
-`VISION_GUESS_MIN_INTERVAL_MS` enforces a minimum pause between guess requests.
+Notes:
+- `GROQ_API_KEY` is required for `POST /api/chat`.
+- `GEMINI_API_KEY` is required for `POST /api/lab/vision-guess`.
+- `VISION_GUESS_DAILY_LIMIT` controls local per-client daily guess quota.
+- `VISION_GUESS_MIN_INTERVAL_MS` controls local cooldown between guesses.
 
 ## Local Development
 
@@ -65,94 +111,12 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open `http://localhost:3000`.
 
-## Resume Data Flow
+## Scripts
 
-- `data/resume.json` is the primary source for displayed resume content.
-- `lib/resume.ts` turns that JSON into a plain-text context block for the LLM.
-- `npm run resume:sync` will:
-  - OCR `public/resume.png` (if present)
-  - Parse key resume sections
-  - Update `data/resume.json`
-  - Write extracted raw text to `data/resume.raw.txt`
-- `npm run build` automatically runs `resume:sync` first (`prebuild` hook).
-
-If `public/resume.png` is missing, sync gracefully skips OCR and still ensures `about` fields are populated.
-
-## API
-
-### `POST /api/chat`
-
-Request body:
-
-```json
-{
-  "messages": [
-    { "role": "user", "content": "Tell me about Yash's Apple internship." }
-  ]
-}
-```
-
-Response body:
-
-```json
-{
-  "message": "..."
-}
-```
-
-Behavior:
-
-- Prepends two system messages:
-  - instruction prompt (plain-text, concise, resume-only answers)
-  - generated resume context from `data/resume.json`
-- Forwards to Groq at `https://api.groq.com/openai/v1/chat/completions`
-
-### `POST /api/lab/vision-guess`
-
-Request body:
-
-```json
-{
-  "imageDataUrl": "data:image/png;base64,iVBORw0..."
-}
-```
-
-Response body:
-
-```json
-{
-  "model": "gemini-2.5-flash-lite",
-  "guess": "Guess: ... (Confidence: 74%)",
-  "usage": {
-    "promptTokens": 1120,
-    "totalTokens": 1120
-  },
-  "rateLimit": {
-    "limit": 10,
-    "remaining": 9,
-    "resetAt": "1710000000"
-  },
-  "localRateLimit": {
-    "limit": 30,
-    "remaining": 29,
-    "resetAt": "2026-02-18T00:00:00.000Z",
-    "cooldownMs": 10000
-  }
-}
-```
-
-Behavior:
-
-- Sends the provided image data URL to Google Gemini Vision.
-- Returns a charades-style guess plus prompt/total token usage and rate-limit headers.
-- Adds local rate-limit guard metadata (`localRateLimit`) to support the in-app guess budget UI.
-
-## NPM Scripts
-
-- `npm run dev`: Start local dev server
-- `npm run lint`: Run ESLint
-- `npm run resume:sync`: OCR/parse resume into JSON data
-- `npm run build`: Run `resume:sync`, then production build
-- `npm run start`: Start production server
+- `npm run dev` — start dev server
+- `npm run lint` — run ESLint
+- `npm run resume:sync` — OCR/parse resume into JSON
+- `npm run build` — production build (runs resume sync first via `prebuild`)
+- `npm run start` — start production server
