@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   type FormEvent,
   type PointerEvent,
@@ -9,14 +8,6 @@ import {
   useRef,
   useState,
 } from "react";
-
-type LabProjectId = "paint-charades";
-
-type LabProject = {
-  id: LabProjectId;
-  title: string;
-  summary: string;
-};
 
 type Point = {
   x: number;
@@ -42,6 +33,23 @@ const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 540;
 const MAX_HISTORY = 20;
 const DEFAULT_CHARADES_DAILY_GUESS_LIMIT = 30;
+const PALETTE = [
+  "#000000",
+  "#404040",
+  "#787878",
+  "#B0B0B0",
+  "#FFFFFF",
+  "#E63946",
+  "#F77F00",
+  "#F4A261",
+  "#2A9D8F",
+  "#264653",
+  "#2E86AB",
+  "#4A90E2",
+  "#9B5DE5",
+  "#F15BB5",
+  "#7B2CBF",
+];
 const TOOL_OPTIONS: Array<{ value: ToolName; label: string; description: string }> = [
   { value: "brush", label: "Brush", description: "Freehand sketch" },
   { value: "eraser", label: "Eraser", description: "Paint over with background" },
@@ -49,15 +57,6 @@ const TOOL_OPTIONS: Array<{ value: ToolName; label: string; description: string 
   { value: "rectangle", label: "Rectangle", description: "Shape outline" },
   { value: "circle", label: "Circle", description: "Round outline" },
   { value: "select", label: "Select", description: "Region actions" },
-];
-
-const LAB_PROJECTS: LabProject[] = [
-  {
-    id: "paint-charades",
-    title: "Paint Charades",
-    summary:
-      "A drawing board with standard paint tools where you can create a sketch, then ask a vision model to guess what you drew.",
-  },
 ];
 
 function clamp(value: number, min: number, max: number): number {
@@ -154,7 +153,6 @@ const defaultRateState = (
 ) => ({ limit, remaining, resetAt: null, cooldownMs: 0 } as VisionRateStateWithCooldown);
 
 type VisionMeta = {
-  model: string | null;
   guess: string;
   usage: {
     promptTokens: number | null;
@@ -193,7 +191,6 @@ function PaintCharadesProject() {
     prompt: 0,
     total: 0,
   });
-  const [visionModel, setVisionModel] = useState("Gemini 2.5 Flash-Lite");
 
   const pointerDownRef = useRef(false);
   const toolStartRef = useRef<Point | null>(null);
@@ -678,7 +675,7 @@ function PaintCharadesProject() {
     }
     setIsGuessing(true);
     setGuessError("");
-    setGuessResult("Asking model to guess your drawing...");
+    setGuessResult("Checking your drawing...");
     const imageData = canvas.toDataURL("image/png");
     try {
       const response = await fetch("/api/lab/vision-guess", {
@@ -693,7 +690,7 @@ function PaintCharadesProject() {
         result = (await response.json()) as VisionMeta & VisionErrorMeta;
       } catch {
         setGuessResult("");
-        setGuessError("Vision endpoint returned an invalid response.");
+        setGuessError("The server returned an invalid response.");
         return;
       }
       if (!response.ok) {
@@ -704,11 +701,9 @@ function PaintCharadesProject() {
         });
         setLocalRateState(result.localRateLimit ?? defaultRateState());
         setGuessResult("");
-        setGuessError(result.message ?? "Could not call vision model right now.");
+        setGuessError(result.message ?? "Could not process your request right now.");
         return;
       }
-      const model = result.model ?? "Unknown vision model";
-      setVisionModel(model);
       setGuessResult(result.guess);
       setLocalRateState(result.localRateLimit);
       setTokenUsage({
@@ -722,7 +717,7 @@ function PaintCharadesProject() {
       });
     } catch {
       setGuessResult("");
-      setGuessError("Could not contact the vision endpoint.");
+      setGuessError("Could not contact the guess endpoint.");
     } finally {
       setIsGuessing(false);
     }
@@ -748,240 +743,212 @@ function PaintCharadesProject() {
       ? "Daily limit reached"
       : charadesDisabled
         ? "Please wait..."
-        : "Ask LLM to guess drawing";
+        : "Guess";
 
   return (
-    <section className="w-full space-y-4">
-      <div className="rounded-3xl border border-[var(--card-border)] bg-[var(--card-background)] p-5 shadow-[0_18px_42px_rgba(0,0,0,0.24)]">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">Paint Charades</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--card-foreground)]">Paint Charades</h2>
-            <p className="mt-2 max-w-2xl text-xs text-[var(--card-muted)] sm:text-sm">
-              Draw with brush tools and request a vision model to guess your sketch, like charades.
-            </p>
-          </div>
-          <div className="rounded-xl border border-[var(--card-border)] px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">
-            Vision model: {visionModel}
-          </div>
-        </div>
+    <section className="h-[calc(100svh-7rem)]">
+      <p className="mb-3 text-xs uppercase tracking-[0.14em] text-[var(--card-muted)]">Sketch a clue, then press Guess to reveal your result.</p>
 
-        <div className="grid gap-4 md:grid-cols-[340px_1fr]">
-          <div className="space-y-3">
-            <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--accent-peach)]/12 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--card-foreground)]">Tools</p>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {TOOL_OPTIONS.map((entry) => (
-                  <button
-                    key={entry.value}
-                    type="button"
-                    onClick={() => setTool(entry.value)}
-                    className={`rounded-xl border px-3 py-2 text-left text-[0.7rem] uppercase tracking-[0.14em] transition sm:text-xs ${
-                      tool === entry.value
-                        ? "border-[var(--accent-charcoal)] bg-[var(--card-foreground)] text-[var(--card-background)]"
-                        : "border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-muted)] hover:border-[var(--card-foreground)] hover:text-[var(--card-foreground)]"
-                    }`}
-                  >
-                    <p className="font-semibold">{entry.label}</p>
-                    <p className="mt-1 text-[0.65rem] uppercase tracking-normal">{entry.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">Canvas</p>
-              <div className="mt-3 space-y-3">
-                <div>
-                  <p className="mb-1 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Color</p>
-                  <div className="flex items-center gap-2">
-                    <label className="sr-only" htmlFor="paint-color">
-                      Brush color
-                    </label>
-                    <input
-                      id="paint-color"
-                      type="color"
-                      value={color}
-                      onChange={(event) => setColor(event.target.value)}
-                      className="h-9 w-11 cursor-pointer rounded-lg border border-[var(--card-border)] bg-white p-1"
-                    />
-                    <input
-                      type="text"
-                      value={color}
-                      onChange={(event) => setColor(event.target.value)}
-                      className="w-full rounded-lg border border-[var(--card-border)] bg-white px-2 py-2 text-sm uppercase"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <p className="mb-1 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Brush Size: {brushSize}px</p>
-                  <input
-                    type="range"
-                    min={1}
-                    max={42}
-                    step={1}
-                    value={brushSize}
-                    onChange={(event) => setBrushSize(Number(event.target.value))}
-                    className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[var(--card-border)]"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">Standard operations</p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="grid h-full gap-3 xl:grid-cols-[250px_1fr]">
+        <aside className="space-y-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
+          <div className="space-y-2">
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Tools</p>
+            <div className="grid grid-cols-2 gap-2">
+              {TOOL_OPTIONS.map((entry) => (
                 <button
+                  key={entry.value}
                   type="button"
-                  onClick={handleUndo}
-                  className="rounded-xl border border-[var(--card-border)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
-                  disabled={history.length <= 1}
+                  onClick={() => setTool(entry.value)}
+                  className={`rounded-lg border px-2 py-2 text-left text-[0.62rem] font-semibold uppercase tracking-[0.12em] transition sm:text-[0.7rem] ${
+                    tool === entry.value
+                      ? "border-[var(--card-foreground)] bg-[var(--card-foreground)] text-[var(--card-background)]"
+                      : "border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-muted)] hover:border-[var(--card-foreground)] hover:text-[var(--card-foreground)]"
+                  }`}
                 >
-                  Undo
+                  {entry.label}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleRedo}
-                  className="rounded-xl border border-[var(--card-border)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
-                  disabled={redoHistory.length === 0}
-                >
-                  Redo
-                </button>
-                <button
-                  type="button"
-                  onClick={handleClearCanvas}
-                  className="rounded-xl border border-[var(--card-border)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveImage}
-                  className="rounded-xl border border-[var(--card-border)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
-                >
-                  Save PNG
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">Select actions</p>
-              <p className="mt-1 text-[0.68rem] text-[var(--card-muted)]">
-                Draw a region using Select, then apply one of the actions.
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={handleCopySelection}
-                  disabled={!hasSelection}
-                  className="rounded-xl border border-[var(--card-border)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-                >
-                  Copy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCutSelection}
-                  disabled={!hasSelection}
-                  className="rounded-xl border border-[var(--card-border)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-                >
-                  Cut
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePasteSelection}
-                  disabled={!clipboardImage}
-                  className="rounded-xl border border-[var(--card-border)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-                >
-                  Paste
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeleteSelection}
-                  disabled={!hasSelection}
-                  className="rounded-xl border border-[var(--card-border)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-                >
-                  Delete
-                </button>
-                <button
-                  type="button"
-                  onClick={handleFillSelection}
-                  disabled={!hasSelection}
-                  className="col-span-2 rounded-xl border border-[var(--card-border)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-                >
-                  Fill selection with color
-                </button>
-              </div>
+              ))}
             </div>
           </div>
 
-            <div className="space-y-3">
-            <div className="relative rounded-3xl border border-[var(--card-border)] bg-white p-3">
-              <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full bg-[var(--card-background)] px-2 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">
-                {toolDescription}
-              </div>
-              <div className="relative rounded-2xl border border-[var(--card-border)]">
-                <canvas
-                  ref={canvasRef}
-                  width={CANVAS_WIDTH}
-                  height={CANVAS_HEIGHT}
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  onPointerCancel={handlePointerUp}
-                  onPointerLeave={handlePointerUp}
-                  className="h-full w-full touch-none rounded-2xl bg-white"
-                  style={{ aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}` }}
+          <div className="space-y-2">
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Color</p>
+            <div className="grid grid-cols-5 gap-2">
+              {PALETTE.map((paletteColor) => (
+                <button
+                  key={paletteColor}
+                  type="button"
+                  onClick={() => setColor(paletteColor)}
+                  aria-label={`Pick ${paletteColor}`}
+                  style={{ backgroundColor: paletteColor }}
+                  className={`h-8 w-full rounded-md border ${
+                    color === paletteColor
+                      ? "border-[var(--card-foreground)] ring-2 ring-[var(--card-foreground)]/40"
+                      : "border-[var(--card-border)]"
+                  }`}
                 />
-                <canvas
-                  ref={overlayRef}
-                  width={CANVAS_WIDTH}
-                  height={CANVAS_HEIGHT}
-                  className="pointer-events-none absolute inset-0 z-10 h-full w-full rounded-2xl"
-                  style={{ aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}` }}
-                />
-              </div>
-              <p className="mt-2 text-[0.68rem] text-[var(--card-muted)]">
-                Tip: use the Select tool to isolate regions, then copy/cut/fill/delete.
-              </p>
+              ))}
+            </div>
+            <label className="mt-2 flex items-center gap-2 text-[0.66rem] text-[var(--card-muted)]">
+              <span className="font-semibold uppercase tracking-[0.12em]">Picker</span>
+              <input
+                type="color"
+                value={color}
+                onChange={(event) => setColor(event.target.value)}
+                className="h-8 w-9 cursor-pointer rounded border border-[var(--card-border)] bg-white p-0"
+              />
+            </label>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Brush</p>
+            <input
+              type="range"
+              min={1}
+              max={42}
+              step={1}
+              value={brushSize}
+              onChange={(event) => setBrushSize(Number(event.target.value))}
+              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[var(--card-border)]"
+            />
+            <p className="text-[0.65rem] text-[var(--card-muted)]">{brushSize}px</p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Actions</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleUndo}
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
+                disabled={history.length <= 1}
+              >
+                Undo
+              </button>
+              <button
+                type="button"
+                onClick={handleRedo}
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
+                disabled={redoHistory.length === 0}
+              >
+                Redo
+              </button>
+              <button
+                type="button"
+                onClick={handleClearCanvas}
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveImage}
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)]"
+              >
+                Save
+              </button>
             </div>
 
-                <form onSubmit={handleGuess} className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
-                  <button
-                    type="submit"
-                    disabled={charadesDisabled}
-                    className="inline-flex w-full justify-center rounded-xl border border-[var(--card-border)] bg-[var(--card-foreground)] px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[var(--card-background)] hover:text-[var(--card-foreground)]"
-                  >
-                    {charadesButtonText}
-                  </button>
-              <p className="mt-2 text-[0.68rem] text-[var(--card-muted)]">
-                This sends the full canvas image to the vision model endpoint and returns one guess.
-              </p>
-              <p className="mt-1 text-[0.68rem] text-[var(--card-muted)]">
-                {charadesGuessesLeftText}
-              </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleCopySelection}
+                disabled={!hasSelection}
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+              >
+                Copy
+              </button>
+              <button
+                type="button"
+                onClick={handleCutSelection}
+                disabled={!hasSelection}
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+              >
+                Cut
+              </button>
+              <button
+                type="button"
+                onClick={handlePasteSelection}
+                disabled={!clipboardImage}
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+              >
+                Paste
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSelection}
+                disabled={!hasSelection}
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+              >
+                Delete
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleFillSelection}
+              disabled={!hasSelection}
+              className="w-full rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+            >
+              Fill region
+            </button>
+          </div>
+        </aside>
+
+        <div className="grid min-h-0 grid-rows-[1fr_auto] gap-3">
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--card-border)] bg-white">
+            <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full bg-[var(--card-background)] px-2 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">
+              {toolDescription}
+            </div>
+            <canvas
+              ref={canvasRef}
+              width={CANVAS_WIDTH}
+              height={CANVAS_HEIGHT}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+              className="h-full w-full touch-none rounded-2xl"
+            />
+            <canvas
+              ref={overlayRef}
+              width={CANVAS_WIDTH}
+              height={CANVAS_HEIGHT}
+              className="pointer-events-none absolute inset-0 z-10 h-full w-full rounded-2xl"
+            />
+          </div>
+
+          <div className="grid gap-3 xl:grid-cols-[1fr_280px]">
+            <form
+              onSubmit={handleGuess}
+              className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3"
+            >
+              <button
+                type="submit"
+                disabled={charadesDisabled}
+                className="inline-flex w-full justify-center rounded-xl border border-[var(--accent-orange)] bg-[var(--accent-orange)] px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {charadesButtonText}
+              </button>
+
+              <p className="mt-2 text-[0.7rem] text-[var(--card-muted)]">{charadesGuessesLeftText}</p>
               {localRateState.resetAt ? (
-                <p className="mt-1 text-[0.68rem] text-[var(--card-muted)]">
-                  Budget resets: {localRateState.resetAt}
-                </p>
+                <p className="mt-1 text-[0.65rem] text-[var(--card-muted)]">Budget resets at {localRateState.resetAt}</p>
               ) : null}
               {charadesCooldownText ? (
-                <p className="mt-1 text-[0.68rem] text-rose-600">
-                  {charadesCooldownText}
-                </p>
+                <p className="mt-1 text-[0.65rem] text-rose-600">{charadesCooldownText}</p>
               ) : null}
             </form>
 
-          <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">Vision Result</p>
+            <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
+              <p className="text-[0.67rem] font-semibold uppercase tracking-[0.12em] text-[var(--card-muted)]">Result</p>
               {guessError ? <p className="mt-2 text-sm text-rose-600">{guessError}</p> : null}
               {guessResult ? <p className="mt-2 text-sm text-[var(--card-foreground)]">{guessResult}</p> : null}
-              {!guessError && !guessResult && (
-                <p className="mt-2 text-sm text-[var(--card-muted)]">
-                  Ask the model for a guess after drawing.
-                </p>
-              )}
-              <div className="mt-3 grid gap-1 text-[0.68rem] text-[var(--card-muted)]">
-                <p>Rate monitor: {rateText(rateState)}</p>
+              {!guessError && !guessResult ? (
+                <p className="mt-2 text-sm text-[var(--card-muted)]">Guess shows here after you draw.</p>
+              ) : null}
+              <div className="mt-3 grid gap-1 text-[0.65rem] text-[var(--card-muted)]">
+                <p>Requests: {rateText(rateState)}</p>
                 <p>
                   Tokens: {tokenUsage.prompt || 0} prompt, {tokenUsage.total || 0} total
                 </p>
@@ -995,72 +962,10 @@ function PaintCharadesProject() {
 }
 
 export default function LabPage() {
-  const [activeProject, setActiveProject] = useState<LabProjectId>("paint-charades");
-
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl items-start justify-center px-4 py-10 sm:px-6 sm:py-14">
-      <section className="w-full space-y-8">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">Lab</p>
-          <h1 className="mt-2 text-3xl font-semibold uppercase tracking-[0.12em] text-[var(--card-foreground)]">Paint Charades</h1>
-          <p className="mt-2 max-w-3xl text-sm text-[var(--card-muted)]">
-            A browser-based drawing game where you draw a clue and a vision model guesses it, like charades.
-          </p>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
-          <aside className="rounded-3xl border border-[var(--card-border)] bg-[var(--card-background)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">Game</p>
-            <div className="mt-3 space-y-2">
-            {LAB_PROJECTS.map((project) => (
-              <button
-                key={project.id}
-                onClick={() => setActiveProject(project.id)}
-                  className={`w-full rounded-2xl border p-3 text-left transition ${
-                    activeProject === project.id
-                      ? "border-[var(--card-foreground)] bg-[var(--card-foreground)] text-[var(--card-background)]"
-                      : "border-[var(--card-border)] bg-[var(--card-background)] hover:border-[var(--card-foreground)]"
-                  }`}
-                >
-                  <p className="text-sm font-semibold">{project.title}</p>
-                  <p
-                    className={`mt-1 text-xs ${
-                      activeProject === project.id ? "text-[rgba(255,255,255,0.82)" : "text-[var(--card-muted)]"
-                    }`}
-                  >
-                    {project.summary}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </aside>
-
-          <div>
-            <PaintCharadesProject />
-          </div>
-        </div>
-
-      <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-4 text-sm text-[var(--card-muted)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">Vision model recommendation</p>
-        <p className="mt-2">
-          Recommended free vision model for this project: <strong>Google Gemini 2.5 Flash-Lite</strong> (via Google AI Studio) for multimodal input and the most generous free-tier request limits in the Gemini family right now.
-          <span className="mt-2 block">
-            Monitor usage by checking rate headers returned from each call (remaining/limit and reset time) and token usage in the charades panel. The monitor updates after every guess.
-          </span>
-          <span className="mt-2 block">
-            Configure with <strong>VISION_MODEL=gemini-2.5-flash-lite</strong> and key with <strong>GEMINI_API_KEY</strong> in <strong>.env.local</strong>.
-          </span>
-          <span className="mt-2 block">
-            If you want a richer model and can accept fewer free requests, switch to <strong>gemini-2.5-flash</strong>.
-          </span>
-        </p>
-          <Link
-            href="/"
-            className="mt-4 inline-flex rounded-xl border border-[var(--card-border)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] transition hover:border-[var(--card-foreground)]"
-          >
-            Back Home
-          </Link>
-        </div>
+    <main className="mx-auto flex min-h-screen w-full items-start justify-center px-4 py-6 sm:px-6">
+      <section className="w-full max-w-[1600px]">
+        <PaintCharadesProject />
       </section>
     </main>
   );
