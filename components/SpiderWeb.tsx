@@ -163,6 +163,42 @@ export default function SpiderWeb() {
                   strokeLinecap="round"
                 />
               </g>
+              <g className="river-surfer" aria-hidden="true">
+                <g className="river-surfer-rider">
+                  <path
+                    className="river-surfer-splash"
+                    d="M-24 12 C-14 8 -7 8 0 11 C9 15 17 15 26 11"
+                    fill="none"
+                    stroke="#ffffff"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    className="river-surfer-board"
+                    d="M-26 9 C-10 1 11 1 32 9 C11 14 -8 14 -26 9"
+                    fill="none"
+                    stroke="#ffffff"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <g
+                    className="river-surfer-figure"
+                    fill="none"
+                    stroke="#ffffff"
+                    strokeWidth="2.1"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="4" cy="-14.5" r="3.2" />
+                    <path d="M4 -11.2 L5.5 -1.8" />
+                    <path d="M5 -7.2 L-2 -2.3" />
+                    <path d="M5.2 -7.3 L14 -6.1" />
+                    <path d="M5.5 -1.8 L-2.4 8.2" />
+                    <path d="M5.5 -1.8 L14.3 6.8" />
+                  </g>
+                </g>
+              </g>
               <ellipse
                 className="river-mist"
                 cx="500"

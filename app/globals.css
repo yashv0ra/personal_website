@@ -114,6 +114,26 @@ body {
   animation: river-mist 7.2s ease-in-out infinite;
 }
 
+.river-surfer {
+  will-change: transform;
+  transform-origin: center;
+  animation: river-surfer-ride 20s linear infinite;
+}
+
+.river-surfer-rider {
+  transform-origin: center;
+  will-change: transform;
+  animation: river-surfer-balance 1.4s ease-in-out infinite;
+}
+
+.river-surfer-board {
+  animation: river-surfer-board-flex 1.2s ease-in-out infinite;
+}
+
+.river-surfer-splash {
+  animation: river-surfer-splash 1s ease-in-out infinite;
+}
+
 @keyframes river-current-drift {
   0%,
   100% {
@@ -157,5 +177,74 @@ body {
   50% {
     opacity: 0.78;
     transform: translateX(12px) scaleX(1.02);
+  }
+}
+
+@keyframes river-surfer-ride {
+  0%,
+  12% {
+    transform: translate3d(-165px, 91px, 0) rotate(-6deg);
+  }
+  14% {
+    transform: translate3d(-100px, 87px, 0) rotate(-2deg);
+  }
+  24% {
+    transform: translate3d(210px, 78px, 0) rotate(4deg);
+  }
+  32% {
+    transform: translate3d(390px, 71px, 0) rotate(-5deg);
+  }
+  40% {
+    transform: translate3d(565px, 86px, 0) rotate(5.5deg);
+  }
+  48% {
+    transform: translate3d(760px, 76px, 0) rotate(-4deg);
+  }
+  54%,
+  100% {
+    transform: translate3d(1060px, 80px, 0) rotate(-2deg);
+  }
+}
+
+@keyframes river-surfer-balance {
+  0%,
+  100% {
+    transform: translateY(-0.8px) rotate(-1.8deg);
+  }
+  50% {
+    transform: translateY(1.1px) rotate(1.8deg);
+  }
+}
+
+@keyframes river-surfer-board-flex {
+  0%,
+  100% {
+    transform: scaleX(1) scaleY(1);
+  }
+  50% {
+    transform: scaleX(1.03) scaleY(0.97);
+  }
+}
+
+@keyframes river-surfer-splash {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .river-surfer,
+  .river-surfer-rider,
+  .river-surfer-board,
+  .river-surfer-splash {
+    animation: none;
+  }
+
+  .river-surfer {
+    transform: translate3d(500px, 81px, 0) rotate(-1deg);
   }
 }
