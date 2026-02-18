@@ -45,11 +45,18 @@ Create `.env.local`:
 
 ```bash
 GROQ_API_KEY=your_groq_api_key
+GEMINI_API_KEY=your_gemini_api_key
+# VISION_MODEL=gemini-2.5-flash-lite
 # Optional:
 # GROQ_MODEL=llama-3.1-8b-instant
+# VISION_GUESS_DAILY_LIMIT=30
+# VISION_GUESS_MIN_INTERVAL_MS=10000
 ```
 
 `GROQ_API_KEY` is required for chat. Without it, `/api/chat` returns a server error message.
+`GEMINI_API_KEY` is required for the Lab Paint Charades feature (`/api/lab/vision-guess`).
+`VISION_GUESS_DAILY_LIMIT` controls how many guesses each client may request per local day.  
+`VISION_GUESS_MIN_INTERVAL_MS` enforces a minimum pause between guess requests.
 
 ## Local Development
 
@@ -101,6 +108,46 @@ Behavior:
   - instruction prompt (plain-text, concise, resume-only answers)
   - generated resume context from `data/resume.json`
 - Forwards to Groq at `https://api.groq.com/openai/v1/chat/completions`
+
+### `POST /api/lab/vision-guess`
+
+Request body:
+
+```json
+{
+  "imageDataUrl": "data:image/png;base64,iVBORw0..."
+}
+```
+
+Response body:
+
+```json
+{
+  "model": "gemini-2.5-flash-lite",
+  "guess": "Guess: ... (Confidence: 74%)",
+  "usage": {
+    "promptTokens": 1120,
+    "totalTokens": 1120
+  },
+  "rateLimit": {
+    "limit": 10,
+    "remaining": 9,
+    "resetAt": "1710000000"
+  },
+  "localRateLimit": {
+    "limit": 30,
+    "remaining": 29,
+    "resetAt": "2026-02-18T00:00:00.000Z",
+    "cooldownMs": 10000
+  }
+}
+```
+
+Behavior:
+
+- Sends the provided image data URL to Google Gemini Vision.
+- Returns a charades-style guess plus prompt/total token usage and rate-limit headers.
+- Adds local rate-limit guard metadata (`localRateLimit`) to support the in-app guess budget UI.
 
 ## NPM Scripts
 
