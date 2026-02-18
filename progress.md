@@ -50,3 +50,16 @@ Original prompt: Yes, that'd be great. Please create a simple block-style game i
 ### TODOs / Suggestions
 - Expand the Lab with a game chooser page if additional prototypes are added later.
 - Add a small score progression mechanic during movement to make faster runs more rewarding.
+
+## 2026-02-18
+- Expanded Lab charades flow for paint game:
+- Added top instructions block with API-cost warning copy.
+- Added prompt generator controls at top with difficulty selector (`easy` / `medium` / `hard`).
+- Added dedicated prompt dataset file `app/lab/charadesPrompts.ts` with 100 prompts per difficulty and alias words for close-match checks.
+- Added guess-to-prompt matching logic with exact/substring/edit-distance checks.
+- Added confetti celebration overlay when the model guess matches close to the active prompt.
+- Added win-state messaging that asks user to press `Clear` to reset before continuing.
+- `Clear` now resets round-win state and active confetti particles.
+- Validation:
+- `npm run lint` passed.
+- `npm run build` passed.
