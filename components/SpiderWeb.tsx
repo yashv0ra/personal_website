@@ -62,10 +62,10 @@ export default function SpiderWeb() {
               </p>
             </div>
           </Link>
-          <div
-            className={`${mobileNodeBase} cursor-not-allowed opacity-85`}
-            aria-label="Lab section coming soon"
-            aria-disabled="true"
+          <Link
+            href="/lab"
+            className={`${mobileNodeBase} transition hover:scale-[1.01]`}
+            aria-label="Open lab projects"
           >
             <LabIcon className="h-8 w-8" />
             <div className="text-left">
@@ -73,10 +73,10 @@ export default function SpiderWeb() {
                 Lab
               </p>
               <p className="mt-1 text-xs text-[var(--card-muted)]">
-                Coming soon.
+                Browse lab projects and prototypes.
               </p>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
 
@@ -223,17 +223,17 @@ export default function SpiderWeb() {
           </span>
         </Link>
 
-        <div
-          className={`${nodeBase} right-[6%] top-[20%] z-10 cursor-not-allowed flex-col gap-2 opacity-85`}
-          aria-label="Lab section coming soon"
-          aria-disabled="true"
+        <Link
+          href="/lab"
+          className={`${nodeBase} right-[6%] top-[20%] z-10 flex-col gap-2 hover:scale-105`}
+          aria-label="Open lab projects"
         >
           <LabIcon />
           <span>Lab</span>
           <span className="rounded-full border border-[var(--card-border)] px-4 py-1 text-[0.65rem] font-semibold tracking-[0.2em] text-[var(--card-muted)]">
-            COMING SOON
+            PROJECTS
           </span>
-        </div>
+        </Link>
       </div>
     </div>
   );
