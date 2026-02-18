@@ -58,7 +58,7 @@ export default function Home() {
       <InteractiveDotField />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),rgba(0,0,0,0.12)_55%,rgba(0,0,0,0.28))]" />
 
-      <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center gap-8 px-4 py-12 sm:px-6 sm:py-16">
+      <main className="stagger-in relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center justify-center gap-8 px-4 py-12 sm:px-6 sm:py-16">
         <div className="text-center">
           <Link
             href="/resume#about"
@@ -73,7 +73,7 @@ export default function Home() {
               priority
             />
           </Link>
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">
+          <h1 className="text-gradient text-4xl font-bold tracking-tight sm:text-6xl">
             Yash Vora
           </h1>
           {socialLinks.length > 0 ? (
@@ -85,7 +85,7 @@ export default function Home() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label={link.label}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--accent-charcoal)] transition-transform duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-orange)] hover:text-[var(--accent-orange)]"
+                  className="lift inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--accent-charcoal)] transition-colors duration-200 hover:border-[var(--accent-orange)] hover:text-[var(--accent-orange)]"
                 >
                   <SocialIcon id={link.id} />
                 </a>

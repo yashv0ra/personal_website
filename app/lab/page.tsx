@@ -15,6 +15,27 @@ import {
   type CharadesDifficulty,
   type CharadesPrompt,
 } from "./charadesPrompts";
+import {
+  IcBrush,
+  IcEraser,
+  IcLine,
+  IcRect,
+  IcCircle,
+  IcSelect,
+  IcUndo,
+  IcRedo,
+  IcTrash,
+  IcDownload,
+  IcCopy,
+  IcPaste,
+  IcFill,
+  IcDelete,
+  IcSparkle,
+  IcBack,
+  IcPaint,
+  TOOL_ICON_MAP,
+} from "./icons";
+import Link from "next/link";
 
 type Point = {
   x: number;
@@ -57,9 +78,17 @@ const PALETTE = [
   "#7c3aed",
   "#d946ef",
 ];
-const TOOL_OPTIONS: Array<{ value: ToolName; label: string; description: string }> = [
+const TOOL_OPTIONS: Array<{
+  value: ToolName;
+  label: string;
+  description: string;
+}> = [
   { value: "brush", label: "Brush", description: "Freehand sketch" },
-  { value: "eraser", label: "Eraser", description: "Paint over with background" },
+  {
+    value: "eraser",
+    label: "Eraser",
+    description: "Paint over with background",
+  },
   { value: "line", label: "Line", description: "Straight stroke" },
   { value: "rectangle", label: "Rectangle", description: "Shape outline" },
   { value: "circle", label: "Circle", description: "Round outline" },
@@ -101,9 +130,9 @@ const CONFETTI_COLORS = [
 ];
 
 const CHARADES_INSTRUCTIONS =
-  "You are playing charades against an LLM. Try your best to draw whatever you would like and hit Guess when you are ready for an LLM to grade your work!";
+  "Draw your best interpretation of the prompt, then hit Guess for the AI to evaluate your artwork.";
 const CHARADES_INSTRUCTIONS_POSTSCRIPT =
-  "PS: I have some restrictions on how often you can press the button due to API costs, so try not to press it too much!";
+  "Guesses are rate-limited to manage API costs.";
 
 function normalizeToken(value: string): string {
   return value.toLowerCase().replace(/[^a-z]/g, "");
@@ -136,7 +165,8 @@ function levenshteinDistance(a: string, b: string): number {
     for (let j = 1; j <= b.length; j += 1) {
       const insertions = current[j - 1] + 1;
       const deletions = previous[j] + 1;
-      const substitutions = previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1);
+      const substitutions =
+        previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1);
       current[j] = Math.min(insertions, deletions, substitutions);
     }
     for (let j = 0; j <= b.length; j += 1) {
@@ -167,7 +197,10 @@ function isTokenCloseMatch(token: string, target: string): boolean {
   return levenshteinDistance(token, target) <= maxDistance;
 }
 
-function guessMatchesPrompt(guess: string, prompt: CharadesPrompt | null): boolean {
+function guessMatchesPrompt(
+  guess: string,
+  prompt: CharadesPrompt | null,
+): boolean {
   if (!prompt) {
     return false;
   }
@@ -185,7 +218,9 @@ function guessMatchesPrompt(guess: string, prompt: CharadesPrompt | null): boole
   }
 
   return guessTokens.some((token) =>
-    targets.some((target) => isTokenCloseMatch(normalizeToken(token), target)),
+    targets.some((target) =>
+      isTokenCloseMatch(normalizeToken(token), target),
+    ),
   );
 }
 
@@ -197,7 +232,9 @@ function createConfettiPieces(count: number): ConfettiPiece[] {
     size: 6 + Math.random() * 8,
     duration: 2400 + Math.random() * 1600,
     delay: Math.random() * 550,
-    color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)] ?? "#ffffff",
+    color:
+      CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)] ??
+      "#ffffff",
     rotation: Math.random() * 360,
   }));
 }
@@ -262,22 +299,13 @@ function drawSelectOutline(
   ctx.strokeStyle = color;
   ctx.setLineDash([4, 4]);
   ctx.lineWidth = 2;
-  ctx.strokeRect(safeRect.x + 0.5, safeRect.y + 0.5, safeRect.width, safeRect.height);
+  ctx.strokeRect(
+    safeRect.x + 0.5,
+    safeRect.y + 0.5,
+    safeRect.width,
+    safeRect.height,
+  );
   ctx.setLineDash([]);
-}
-
-function rateText(rateData: VisionRateState): string {
-  if (!rateData.limit && !rateData.remaining && !rateData.resetAt) {
-    return "Rate data unavailable";
-  }
-  if (rateData.remaining != null && rateData.limit != null) {
-    const resetText = rateData.resetAt ? ` • reset: ${rateData.resetAt}` : "";
-    return `${rateData.remaining}/${rateData.limit} requests remaining${resetText}`;
-  }
-  const resetText = rateData.resetAt ? ` • reset: ${rateData.resetAt}` : "";
-  return rateData.remaining != null
-    ? `~${rateData.remaining} requests remaining${resetText}`
-    : `Monitoring rate headers${resetText}`;
 }
 
 type VisionRateState = {
@@ -293,7 +321,13 @@ type VisionRateStateWithCooldown = VisionRateState & {
 const defaultRateState = (
   limit: number | null = DEFAULT_CHARADES_DAILY_GUESS_LIMIT,
   remaining: number | null = DEFAULT_CHARADES_DAILY_GUESS_LIMIT,
-) => ({ limit, remaining, resetAt: null, cooldownMs: 0 } as VisionRateStateWithCooldown);
+) =>
+  ({
+    limit,
+    remaining,
+    resetAt: null,
+    cooldownMs: 0,
+  }) as VisionRateStateWithCooldown;
 
 type VisionMeta = {
   guess: string;
@@ -311,6 +345,10 @@ type VisionErrorMeta = {
   localRateLimit?: VisionRateStateWithCooldown;
 };
 
+/* ------------------------------------------------------------------ */
+/*  Paint + Charades project                                          */
+/* ------------------------------------------------------------------ */
+
 function PaintCharadesProject() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -320,7 +358,9 @@ function PaintCharadesProject() {
   const [isCharadesMode, setIsCharadesMode] = useState(true);
   const [history, setHistory] = useState<string[]>([]);
   const [redoHistory, setRedoHistory] = useState<string[]>([]);
-  const [activeSelection, setActiveSelection] = useState<RectRegion | null>(null);
+  const [activeSelection, setActiveSelection] = useState<RectRegion | null>(
+    null,
+  );
   const [clipboardImage, setClipboardImage] = useState<ImageData | null>(null);
   const [isGuessing, setIsGuessing] = useState(false);
   const [guessError, setGuessError] = useState("");
@@ -330,13 +370,17 @@ function PaintCharadesProject() {
     remaining: null,
     resetAt: null,
   });
-  const [localRateState, setLocalRateState] = useState<VisionRateStateWithCooldown>(defaultRateState());
+  const [localRateState, setLocalRateState] =
+    useState<VisionRateStateWithCooldown>(defaultRateState());
   const [tokenUsage, setTokenUsage] = useState({
     prompt: 0,
     total: 0,
   });
-  const [selectedDifficulty, setSelectedDifficulty] = useState<CharadesDifficulty>("easy");
-  const [activePrompt, setActivePrompt] = useState<CharadesPrompt | null>(null);
+  const [selectedDifficulty, setSelectedDifficulty] =
+    useState<CharadesDifficulty>("easy");
+  const [activePrompt, setActivePrompt] = useState<CharadesPrompt | null>(
+    null,
+  );
   const [roundWon, setRoundWon] = useState(false);
   const [roundStatus, setRoundStatus] = useState("");
   const [confettiPieces, setConfettiPieces] = useState<ConfettiPiece[]>([]);
@@ -458,14 +502,19 @@ function PaintCharadesProject() {
     }
 
     const currentWord = activePrompt?.word ?? null;
-    let nextPrompt = pool[Math.floor(Math.random() * pool.length)] ?? null;
+    let nextPrompt =
+      pool[Math.floor(Math.random() * pool.length)] ?? null;
     if (!nextPrompt) {
       return;
     }
 
     if (pool.length > 1 && currentWord && nextPrompt.word === currentWord) {
       const index = pool.findIndex((entry) => entry.word === currentWord);
-      const nextIndex = index >= 0 ? (index + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length : 0;
+      const nextIndex =
+        index >= 0
+          ? (index + 1 + Math.floor(Math.random() * (pool.length - 1))) %
+            pool.length
+          : 0;
       nextPrompt = pool[nextIndex] ?? nextPrompt;
     }
 
@@ -565,7 +614,11 @@ function PaintCharadesProject() {
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLCanvasElement>) => {
-    if (!pointerDownRef.current || !toolStartRef.current || !canvasRef.current) {
+    if (
+      !pointerDownRef.current ||
+      !toolStartRef.current ||
+      !canvasRef.current
+    ) {
       return;
     }
 
@@ -606,7 +659,12 @@ function PaintCharadesProject() {
       ctx.beginPath();
       ctx.strokeStyle = color;
       ctx.lineWidth = brushSize;
-      ctx.strokeRect(toolStartRef.current.x, toolStartRef.current.y, currentWidth, currentHeight);
+      ctx.strokeRect(
+        toolStartRef.current.x,
+        toolStartRef.current.y,
+        currentWidth,
+        currentHeight,
+      );
     } else if (tool === "circle") {
       const radiusX = Math.abs(point.x - toolStartRef.current.x);
       const radiusY = Math.abs(point.y - toolStartRef.current.y);
@@ -614,7 +672,13 @@ function PaintCharadesProject() {
       ctx.beginPath();
       ctx.strokeStyle = color;
       ctx.lineWidth = brushSize;
-      ctx.arc(toolStartRef.current.x, toolStartRef.current.y, radius, 0, Math.PI * 2);
+      ctx.arc(
+        toolStartRef.current.x,
+        toolStartRef.current.y,
+        radius,
+        0,
+        Math.PI * 2,
+      );
       ctx.stroke();
     } else if (tool === "select") {
       const currentWidth = point.x - toolStartRef.current.x;
@@ -641,7 +705,7 @@ function PaintCharadesProject() {
           safeRegion.x,
           safeRegion.y,
           safeRegion.width,
-          safeRegion.height
+          safeRegion.height,
         );
         overlayCtx.setLineDash([]);
       }
@@ -676,7 +740,8 @@ function PaintCharadesProject() {
       if (!region) {
         return;
       }
-      const hasMovement = Math.abs(region.width) > 0 || Math.abs(region.height) > 0;
+      const hasMovement =
+        Math.abs(region.width) > 0 || Math.abs(region.height) > 0;
       if (hasMovement) {
         pushHistory();
       }
@@ -718,7 +783,9 @@ function PaintCharadesProject() {
       const next = [...current];
       const last = next.pop();
       if (last) {
-        setRedoHistory((previous) => [last, ...previous].slice(0, MAX_HISTORY));
+        setRedoHistory((previous) =>
+          [last, ...previous].slice(0, MAX_HISTORY),
+        );
       }
       if (next.length > 0) {
         restoreHistory(next[next.length - 1]);
@@ -793,7 +860,9 @@ function PaintCharadesProject() {
     if (!ctx) {
       return;
     }
-    setClipboardImage(ctx.getImageData(rect.x, rect.y, rect.width, rect.height));
+    setClipboardImage(
+      ctx.getImageData(rect.x, rect.y, rect.width, rect.height),
+    );
   };
 
   const handlePasteSelection = () => {
@@ -808,8 +877,14 @@ function PaintCharadesProject() {
     pushHistory();
     const x = selectedRef.current?.x ?? 40;
     const y = selectedRef.current?.y ?? 40;
-    const maxX = Math.max(0, Math.min(CANVAS_WIDTH - clipboardImage.width, x));
-    const maxY = Math.max(0, Math.min(CANVAS_HEIGHT - clipboardImage.height, y));
+    const maxX = Math.max(
+      0,
+      Math.min(CANVAS_WIDTH - clipboardImage.width, x),
+    );
+    const maxY = Math.max(
+      0,
+      Math.min(CANVAS_HEIGHT - clipboardImage.height, y),
+    );
     ctx.putImageData(clipboardImage, maxX, maxY);
     if (selectedRef.current) {
       updateSelection({
@@ -844,21 +919,27 @@ function PaintCharadesProject() {
     const canvas = canvasRef.current;
     const cooldownMs = localRateState.cooldownMs ?? 0;
     const hasRemainingGuesses =
-      localRateState.limit == null || localRateState.remaining == null || localRateState.remaining > 0;
+      localRateState.limit == null ||
+      localRateState.remaining == null ||
+      localRateState.remaining > 0;
     if (!canvas || isGuessing) {
       return;
     }
     if (roundWon) {
-      setGuessError("Round complete. Press Clear to reset the canvas before guessing again.");
+      setGuessError(
+        "Round complete. Press Clear to reset the canvas before guessing again.",
+      );
       return;
     }
     if (cooldownMs > 0) {
-      setGuessError(`Please wait ${Math.ceil(cooldownMs / 1000)} seconds before guessing again.`);
+      setGuessError(
+        `Please wait ${Math.ceil(cooldownMs / 1000)} seconds before guessing again.`,
+      );
       return;
     }
     if (!hasRemainingGuesses) {
       setGuessError(
-        `Daily charades limit reached. Try again at ${localRateState.resetAt ?? "your next reset time"}.`
+        `Daily charades limit reached. Try again at ${localRateState.resetAt ?? "your next reset time"}.`,
       );
       return;
     }
@@ -890,7 +971,9 @@ function PaintCharadesProject() {
         });
         setLocalRateState(result.localRateLimit ?? defaultRateState());
         setGuessResult("");
-        setGuessError(result.message ?? "Could not process your request right now.");
+        setGuessError(
+          result.message ?? "Could not process your request right now.",
+        );
         return;
       }
       setGuessResult(result.guess);
@@ -919,7 +1002,11 @@ function PaintCharadesProject() {
     }
   };
 
-  const hasSelection = Boolean(activeSelection && activeSelection.width > 0 && activeSelection.height > 0);
+  const hasSelection = Boolean(
+    activeSelection &&
+      activeSelection.width > 0 &&
+      activeSelection.height > 0,
+  );
   useEffect(() => {
     const overlay = overlayRef.current;
     if (!overlay) {
@@ -930,7 +1017,11 @@ function PaintCharadesProject() {
       return;
     }
     overlayCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    if (!activeSelection || activeSelection.width <= 0 || activeSelection.height <= 0) {
+    if (
+      !activeSelection ||
+      activeSelection.width <= 0 ||
+      activeSelection.height <= 0
+    ) {
       return;
     }
     drawSelectOutline(overlay, activeSelection, "#3b82f6");
@@ -938,7 +1029,9 @@ function PaintCharadesProject() {
 
   const charadesCooldownMs = localRateState.cooldownMs ?? 0;
   const hasRemainingGuesses =
-    localRateState.limit == null || localRateState.remaining == null || localRateState.remaining > 0;
+    localRateState.limit == null ||
+    localRateState.remaining == null ||
+    localRateState.remaining > 0;
   const charadesGuessesLeftText =
     localRateState.limit !== null && localRateState.remaining !== null
       ? `${localRateState.remaining}/${localRateState.limit} guesses left`
@@ -947,8 +1040,10 @@ function PaintCharadesProject() {
     charadesCooldownMs > 0
       ? `Next guess in ${Math.ceil(charadesCooldownMs / 1000)}s`
       : null;
-  const charadesDisabled = roundWon || isGuessing || charadesCooldownMs > 0 || !hasRemainingGuesses;
-  const toolDescription = TOOL_OPTIONS.find((entry) => entry.value === tool)?.description ?? "";
+  const charadesDisabled =
+    roundWon || isGuessing || charadesCooldownMs > 0 || !hasRemainingGuesses;
+  const toolDescription =
+    TOOL_OPTIONS.find((entry) => entry.value === tool)?.description ?? "";
   const charadesButtonText = roundWon
     ? "Reset canvas first"
     : isGuessing
@@ -958,11 +1053,18 @@ function PaintCharadesProject() {
         : charadesDisabled
           ? "Please wait..."
           : "Guess";
-  const activePromptAliases = activePrompt ? activePrompt.aliases.slice(0, 2) : [];
+  const activePromptAliases = activePrompt
+    ? activePrompt.aliases.slice(0, 2)
+    : [];
+
+  /* ---------------------------------------------------------------- */
+  /*  Render                                                          */
+  /* ---------------------------------------------------------------- */
 
   return (
-    <section className="h-[calc(100svh-7rem)]">
-      {confettiPieces.length > 0 ? (
+    <section className="flex h-[calc(100svh-5rem)] flex-col gap-3 xl:flex-row">
+      {/* ---------- Confetti overlay ---------- */}
+      {confettiPieces.length > 0 && (
         <div className="pointer-events-none fixed inset-0 z-[70] overflow-hidden">
           {confettiPieces.map((piece) => (
             <span
@@ -981,31 +1083,235 @@ function PaintCharadesProject() {
             />
           ))}
         </div>
-      ) : null}
+      )}
 
-      <div className="mb-3 grid gap-3 xl:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
-          <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">
-            Charades Instructions
+      {/* ---------- Canvas area ---------- */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {/* Canvas wrapper */}
+        <div className="relative flex-1 overflow-hidden rounded-2xl border border-[var(--card-border)] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.10)]">
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+            className="h-full w-full touch-none"
+          />
+          <canvas
+            ref={overlayRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+          />
+
+          {/* Floating: tool description pill */}
+          <div className="float-bar pointer-events-none absolute left-3 top-3 z-20 px-3 py-1.5 text-[0.65rem] font-medium tracking-wide text-[var(--card-muted)]">
+            {toolDescription}
+          </div>
+
+          {/* Floating: action bar (top-right) */}
+          <div className="float-bar absolute right-3 top-3 z-20 flex items-center gap-0.5 p-1">
+            <button
+              type="button"
+              onClick={handleUndo}
+              disabled={history.length <= 1}
+              title="Undo"
+              aria-label="Undo"
+              className="icon-btn"
+            >
+              <IcUndo />
+            </button>
+            <button
+              type="button"
+              onClick={handleRedo}
+              disabled={redoHistory.length === 0}
+              title="Redo"
+              aria-label="Redo"
+              className="icon-btn"
+            >
+              <IcRedo />
+            </button>
+            <div className="mx-1 h-5 w-px bg-black/10" />
+            <button
+              type="button"
+              onClick={handleClearCanvas}
+              title="Clear canvas"
+              aria-label="Clear canvas"
+              className="icon-btn"
+            >
+              <IcTrash />
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveImage}
+              title="Save drawing"
+              aria-label="Save drawing"
+              className="icon-btn"
+            >
+              <IcDownload />
+            </button>
+          </div>
+
+          {/* Floating: tool bar (bottom-left) */}
+          <div className="float-bar absolute bottom-3 left-3 z-20 flex items-center gap-0.5 p-1">
+            {TOOL_OPTIONS.map((entry) => {
+              const Icon = TOOL_ICON_MAP[entry.value];
+              const active = tool === entry.value;
+              const locked = isToolLocked(entry.value);
+              return (
+                <button
+                  key={entry.value}
+                  type="button"
+                  onClick={() => {
+                    if (!locked) setTool(entry.value);
+                  }}
+                  disabled={locked}
+                  title={entry.label}
+                  aria-label={entry.label}
+                  className={`icon-btn ${active ? "icon-btn-active" : ""}`}
+                >
+                  {Icon ? <Icon /> : entry.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Floating: color & brush bar (bottom-center) */}
+          <div className="float-bar absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 p-1.5 pl-2.5">
+            <div className="flex items-center gap-1">
+              {PALETTE.map((paletteColor) => (
+                <button
+                  key={paletteColor}
+                  type="button"
+                  onClick={() => setColor(paletteColor)}
+                  aria-label={`Pick ${paletteColor}`}
+                  style={{ backgroundColor: paletteColor }}
+                  className={`h-6 w-6 rounded-full border-2 transition-transform ${
+                    color === paletteColor
+                      ? "scale-110 border-[var(--card-foreground)] shadow-[0_0_0_2px_rgba(253,123,65,0.4)]"
+                      : "border-transparent hover:scale-105"
+                  }`}
+                />
+              ))}
+              <input
+                type="color"
+                value={color}
+                onChange={(event) => setColor(event.target.value)}
+                className="ml-1 h-6 w-6 cursor-pointer rounded-full border border-black/10 bg-white p-0"
+              />
+            </div>
+            <div className="h-5 w-px bg-black/10" />
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min={1}
+                max={42}
+                step={1}
+                value={brushSize}
+                onChange={(event) => setBrushSize(Number(event.target.value))}
+                className="h-1 w-16 cursor-pointer appearance-none rounded-full bg-black/15 accent-[var(--accent-orange)]"
+              />
+              <span className="w-8 text-center text-[0.6rem] font-medium tabular-nums text-[var(--card-muted)]">
+                {brushSize}px
+              </span>
+            </div>
+          </div>
+
+          {/* Floating: selection actions (appears when region selected) */}
+          {hasSelection && !isCharadesMode && (
+            <div className="float-bar absolute bottom-14 left-3 z-20 flex items-center gap-0.5 p-1">
+              <button
+                type="button"
+                onClick={handleCopySelection}
+                title="Copy"
+                aria-label="Copy"
+                className="icon-btn"
+              >
+                <IcCopy />
+              </button>
+              <button
+                type="button"
+                onClick={handlePasteSelection}
+                disabled={!clipboardImage}
+                title="Paste"
+                aria-label="Paste"
+                className="icon-btn"
+              >
+                <IcPaste />
+              </button>
+              <button
+                type="button"
+                onClick={handleFillSelection}
+                title="Fill"
+                aria-label="Fill"
+                className="icon-btn"
+              >
+                <IcFill />
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSelection}
+                title="Delete"
+                aria-label="Delete"
+                className="icon-btn"
+              >
+                <IcDelete />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ---------- Charades side panel ---------- */}
+      <aside className="flex w-full shrink-0 flex-col gap-3 overflow-y-auto xl:w-80">
+        {/* Mode toggle */}
+        <label className="float-bar flex cursor-pointer items-center justify-between px-4 py-3">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[var(--card-foreground)]">
+            Charades Mode
+          </span>
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={isCharadesMode}
+              onChange={(event) => setIsCharadesMode(event.target.checked)}
+              className="peer sr-only"
+            />
+            <div className="h-6 w-11 rounded-full bg-black/10 transition-colors peer-checked:bg-[var(--accent-orange)]" />
+            <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+          </div>
+        </label>
+
+        {/* Instructions */}
+        <div className="float-bar space-y-2 px-4 py-3">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--card-muted)]">
+            How to play
           </p>
-          <p className="mt-2 text-sm text-[var(--card-foreground)]">{CHARADES_INSTRUCTIONS}</p>
-          <p className="mt-2 text-xs text-[var(--card-muted)]">{CHARADES_INSTRUCTIONS_POSTSCRIPT}</p>
+          <p className="text-sm leading-relaxed text-[var(--card-foreground)]">
+            {CHARADES_INSTRUCTIONS}
+          </p>
+          <p className="text-[0.7rem] leading-relaxed text-[var(--card-muted)]">
+            {CHARADES_INSTRUCTIONS_POSTSCRIPT}
+          </p>
         </div>
 
-        <div className="space-y-2 rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
-          <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">
-            Prompt Generator
+        {/* Prompt generator */}
+        <div className="float-bar space-y-3 px-4 py-3">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--card-muted)]">
+            Prompt
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="flex gap-1.5">
             {CHARADES_DIFFICULTIES.map((difficulty) => (
               <button
                 key={difficulty}
                 type="button"
                 onClick={() => setSelectedDifficulty(difficulty)}
-                className={`rounded-lg border px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.12em] transition sm:text-[0.7rem] ${
+                className={`flex-1 rounded-lg px-2 py-1.5 text-[0.65rem] font-semibold uppercase tracking-wider transition ${
                   selectedDifficulty === difficulty
-                    ? "border-[var(--card-foreground)] bg-[var(--card-foreground)] text-[var(--card-background)]"
-                    : "border-[var(--card-border)] text-[var(--card-muted)] hover:border-[var(--card-foreground)] hover:text-[var(--card-foreground)]"
+                    ? "bg-[var(--accent-orange)] text-white shadow-[0_2px_8px_rgba(253,123,65,0.35)]"
+                    : "bg-black/[0.04] text-[var(--card-muted)] hover:bg-black/[0.08] hover:text-[var(--card-foreground)]"
                 }`}
               >
                 {difficulty}
@@ -1015,293 +1321,108 @@ function PaintCharadesProject() {
           <button
             type="button"
             onClick={handleGeneratePrompt}
-            className="w-full rounded-xl border border-[var(--accent-orange)] bg-[var(--accent-orange)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:brightness-95"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent-orange)] px-3 py-2.5 text-xs font-semibold uppercase tracking-widest text-white shadow-[0_4px_14px_rgba(253,123,65,0.35)] transition hover:brightness-110 active:scale-[0.98]"
           >
-            Generate One-Word Prompt
+            <IcSparkle />
+            Generate
           </button>
-          <div className="rounded-xl border border-[var(--card-border)] bg-white px-3 py-2 text-center">
-            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Draw this</p>
-            <p className="mt-1 text-xl font-semibold uppercase tracking-[0.06em] text-[var(--card-foreground)]">
-              {activePrompt ? activePrompt.word : "No prompt yet"}
+
+          {/* Active prompt display */}
+          <div
+            className={`rounded-xl border px-4 py-3 text-center ${
+              activePrompt
+                ? "pulse-glow border-[var(--accent-orange)]/30 bg-[var(--accent-orange)]/[0.06]"
+                : "border-black/[0.06] bg-black/[0.02]"
+            }`}
+          >
+            <p className="text-[0.6rem] font-semibold uppercase tracking-widest text-[var(--card-muted)]">
+              Draw this
             </p>
-            {activePromptAliases.length > 0 ? (
+            <p className="mt-1 text-2xl font-bold tracking-tight text-[var(--card-foreground)]">
+              {activePrompt ? activePrompt.word : "\u2014"}
+            </p>
+            {activePromptAliases.length > 0 && (
               <p className="mt-1 text-[0.65rem] text-[var(--card-muted)]">
-                Close words: {activePromptAliases.join(", ")}
+                Also accepts: {activePromptAliases.join(", ")}
               </p>
-            ) : null}
+            )}
           </div>
         </div>
-      </div>
 
-      <div className="grid h-full gap-3 xl:grid-cols-[250px_1fr]">
-        <aside className="space-y-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
-          <div className="space-y-2">
-            <label className="flex items-center justify-between rounded-lg border border-[var(--card-border)] bg-[var(--card-background)] px-2 py-2">
-              <span className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">
-                Charades mode
+        {/* Guess + Result */}
+        <form onSubmit={handleGuess} className="float-bar space-y-3 px-4 py-3">
+          <button
+            type="submit"
+            disabled={charadesDisabled}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--card-foreground)] px-4 py-3 text-sm font-semibold uppercase tracking-widest text-[var(--card-background)] shadow-[0_4px_14px_rgba(0,0,0,0.18)] transition hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {charadesButtonText}
+          </button>
+
+          <div className="flex items-center justify-between text-[0.65rem] text-[var(--card-muted)]">
+            <span>{charadesGuessesLeftText}</span>
+            {charadesCooldownText && (
+              <span className="font-medium text-rose-500">
+                {charadesCooldownText}
               </span>
-              <input
-                type="checkbox"
-                checked={isCharadesMode}
-                onChange={(event) => setIsCharadesMode(event.target.checked)}
-                className="h-4 w-4 cursor-pointer accent-[var(--accent-orange)]"
-              />
-            </label>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Tools</p>
-            <div className="grid grid-cols-2 gap-2">
-              {TOOL_OPTIONS.map((entry) => (
-                <button
-                  key={entry.value}
-                  type="button"
-                  onClick={() => {
-                    if (!isToolLocked(entry.value)) {
-                      setTool(entry.value);
-                    }
-                  }}
-                  disabled={isToolLocked(entry.value)}
-                  title={entry.label}
-                  aria-label={entry.label}
-                  className={`rounded-lg border px-2 py-2 text-left text-[0.62rem] font-semibold uppercase tracking-[0.12em] transition sm:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-45 ${
-                    tool === entry.value
-                      ? "border-[var(--card-foreground)] bg-[var(--card-foreground)] text-[var(--card-background)]"
-                      : "border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-muted)] hover:border-[var(--card-foreground)] hover:text-[var(--card-foreground)]"
-                  }`}
-                >
-                  {entry.label}
-                </button>
-              ))}
-            </div>
+          {/* Result area */}
+          <div className="min-h-[3rem]">
+            {guessError && (
+              <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">
+                {guessError}
+              </p>
+            )}
+            {guessResult && !guessError && (
+              <p className="text-sm leading-relaxed text-[var(--card-foreground)]">
+                {guessResult}
+              </p>
+            )}
+            {roundStatus && (
+              <p className="mt-2 rounded-lg border border-emerald-400/40 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                {roundStatus}
+              </p>
+            )}
+            {!guessError && !guessResult && (
+              <p className="text-sm text-[var(--card-muted)]">
+                AI guess appears here after you draw.
+              </p>
+            )}
           </div>
-          <div className="space-y-2">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Color</p>
-            <div className="grid grid-cols-5 gap-2">
-              {PALETTE.map((paletteColor) => (
-                <button
-                  key={paletteColor}
-                  type="button"
-                  onClick={() => setColor(paletteColor)}
-                  aria-label={`Pick ${paletteColor}`}
-                  style={{ backgroundColor: paletteColor }}
-                  className={`h-8 w-full rounded-md border ${
-                    color === paletteColor
-                      ? "border-[var(--card-foreground)] ring-2 ring-[var(--card-foreground)]/40"
-                      : "border-[var(--card-border)]"
-                  }`}
-                />
-              ))}
-            </div>
-            <label className="mt-2 flex items-center gap-2 text-[0.66rem] text-[var(--card-muted)]">
-              <span className="font-semibold uppercase tracking-[0.12em]">Picker</span>
-              <input
-                type="color"
-                value={color}
-                onChange={(event) => setColor(event.target.value)}
-                className="h-8 w-9 cursor-pointer rounded border border-[var(--card-border)] bg-white p-0"
-              />
-            </label>
-          </div>
-          <div className="space-y-2">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Brush</p>
-            <input
-              type="range"
-              min={1}
-              max={42}
-              step={1}
-              value={brushSize}
-              onChange={(event) => setBrushSize(Number(event.target.value))}
-              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[var(--card-border)]"
-            />
-            <p className="text-[0.65rem] text-[var(--card-muted)]">{brushSize}px</p>
-          </div>
-          <div className="space-y-2">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Actions</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleUndo}
-                title="Undo (Ctrl+Z)"
-                aria-label="Undo"
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)]"
-                disabled={history.length <= 1}
-              >
-                Undo
-              </button>
-              <button
-                type="button"
-                onClick={handleRedo}
-                title="Redo"
-                aria-label="Redo"
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)]"
-                disabled={redoHistory.length === 0}
-              >
-                Redo
-              </button>
-              <button
-                type="button"
-                onClick={handleClearCanvas}
-                title="Clear canvas"
-                aria-label="Clear canvas"
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)]"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveImage}
-                title="Save drawing"
-                aria-label="Save drawing"
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)]"
-              >
-                Save
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleCopySelection}
-                disabled={isCharadesMode || !hasSelection}
-                title="Copy selected area"
-                aria-label="Copy selected area"
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-              >
-                Copy
-              </button>
-              <button
-                type="button"
-                onClick={handlePasteSelection}
-                disabled={isCharadesMode || !clipboardImage}
-                title="Paste"
-                aria-label="Paste"
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-              >
-                Paste
-              </button>
-              <button
-                type="button"
-                onClick={handleFillSelection}
-                disabled={isCharadesMode || !hasSelection}
-                title="Fill selected area"
-                aria-label="Fill selected area"
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-              >
-                Fill region
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteSelection}
-                disabled={!hasSelection}
-                title="Delete selected area"
-                aria-label="Delete selected area"
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        <div className="grid min-h-0 grid-rows-[1fr_auto] gap-3">
-          <div className="relative overflow-hidden rounded-2xl border border-[var(--card-border)] bg-white">
-            <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full bg-[var(--card-background)] px-2 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]">
-              {toolDescription}
-            </div>
-            <canvas
-              ref={canvasRef}
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-              className="h-full w-full touch-none rounded-2xl"
-            />
-            <canvas
-              ref={overlayRef}
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
-              className="pointer-events-none absolute inset-0 z-10 h-full w-full rounded-2xl"
-            />
-          </div>
-
-          <div className="grid gap-3 xl:grid-cols-[1fr_280px]">
-            <form
-              onSubmit={handleGuess}
-              className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3"
-            >
-              <button
-                type="submit"
-                disabled={charadesDisabled}
-                className="inline-flex w-full justify-center rounded-xl border border-[var(--accent-orange)] bg-[var(--accent-orange)] px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {charadesButtonText}
-              </button>
-
-              <p className="mt-2 text-[0.7rem] text-[var(--card-muted)]">{charadesGuessesLeftText}</p>
-              {localRateState.resetAt ? (
-                <p className="mt-1 text-[0.65rem] text-[var(--card-muted)]">Budget resets at {localRateState.resetAt}</p>
-              ) : null}
-              {charadesCooldownText ? (
-                <p className="mt-1 text-[0.65rem] text-rose-600">{charadesCooldownText}</p>
-              ) : null}
-            </form>
-
-            <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
-              <p className="text-[0.67rem] font-semibold uppercase tracking-[0.12em] text-[var(--card-muted)]">Result</p>
-              {guessError ? <p className="mt-2 text-sm text-rose-600">{guessError}</p> : null}
-              {guessResult ? <p className="mt-2 text-sm text-[var(--card-foreground)]">{guessResult}</p> : null}
-              {roundStatus ? (
-                <p className="mt-2 rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-2 py-2 text-sm text-emerald-700">
-                  {roundStatus}
-                </p>
-              ) : null}
-              {!guessError && !guessResult ? (
-                <p className="mt-2 text-sm text-[var(--card-muted)]">Guess shows here after you draw.</p>
-              ) : null}
-              <div className="mt-3 grid gap-1 text-[0.65rem] text-[var(--card-muted)]">
-                <p>Requests: {rateText(rateState)}</p>
-                <p>
-                  Tokens: {tokenUsage.prompt || 0} prompt, {tokenUsage.total || 0} total
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <style jsx global>{`
-        @keyframes lab-confetti-fall {
-          0% {
-            transform: translate3d(0, -8vh, 0) rotate(0deg);
-          }
-          100% {
-            transform: translate3d(var(--confetti-drift), 112vh, 0) rotate(760deg);
-          }
-        }
-      `}</style>
+        </form>
+      </aside>
     </section>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Lab index page                                                    */
+/* ------------------------------------------------------------------ */
+
 export default function LabPage() {
-  const [activeProject, setActiveProject] = useState<LabProjectId | "menu">("menu");
+  const [activeProject, setActiveProject] = useState<LabProjectId | "menu">(
+    "menu",
+  );
 
   if (activeProject === "paint-charades") {
     return (
-      <main className="mx-auto flex min-h-screen w-full items-start justify-center px-4 py-6 sm:px-6">
+      <main className="mx-auto flex min-h-screen w-full items-start justify-center bg-[var(--background)] px-4 py-5 sm:px-6">
         <section className="w-full max-w-[1600px]">
-          <div className="mb-4 flex justify-start">
+          <div className="mb-4 flex items-center gap-3">
             <button
               type="button"
               onClick={() => setActiveProject("menu")}
-              className="rounded-full border border-[var(--card-border)] bg-[var(--card-background)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--card-foreground)]"
+              className="icon-btn !h-9 !w-9 rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-sm"
+              aria-label="Back to Lab Index"
+              title="Back to Lab Index"
             >
-              Back to Lab Index
+              <IcBack />
             </button>
+            <span className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
+              Paint + Charades
+            </span>
           </div>
           <PaintCharadesProject />
         </section>
@@ -1310,46 +1431,74 @@ export default function LabPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col items-start justify-start px-4 py-10 sm:px-6">
-      <section className="w-full rounded-2xl border border-[rgba(221,220,219,0.35)] bg-[rgba(255,255,255,0.06)] p-7 text-[var(--foreground)] shadow-[0_10px_30px_rgba(0,0,0,0.22)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-peach)]">
-          Lab Index
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Projects</h1>
-        <p className="mt-3 max-w-2xl text-sm text-[var(--muted)] sm:text-base">
-          Pick an experiment from the list below to enter.
-        </p>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-[var(--background)] px-4 py-16 sm:px-6">
+      <div className="w-full max-w-3xl space-y-10 text-center">
+        {/* Header */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--accent-orange)]">
+            Lab
+          </p>
+          <h1 className="text-4xl font-bold tracking-tight text-[var(--foreground)] sm:text-5xl">
+            Experiments
+          </h1>
+          <p className="mx-auto max-w-md text-base text-[var(--muted)]">
+            A playground for interactive projects and creative prototypes.
+          </p>
+        </div>
 
-        <ul className="mt-8 grid gap-4">
+        {/* Project cards */}
+        <div className="grid gap-5">
           {LAB_OPTIONS.map((project) => (
-            <li
+            <button
               key={project.id}
-              className="rounded-2xl border border-[rgba(221,220,219,0.35)] bg-[rgba(255,255,255,0.06)] p-5"
+              type="button"
+              onClick={() => setActiveProject(project.id)}
+              className="lift group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-left backdrop-blur-sm"
             >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-2">
-                  <p className="inline-flex rounded-full border border-[rgba(253,123,65,0.5)] bg-[rgba(253,123,65,0.15)] px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-[var(--accent-peach)]">
+              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[var(--accent-orange)]/10 blur-3xl transition-all duration-500 group-hover:bg-[var(--accent-orange)]/20 group-hover:blur-2xl" />
+              <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-3">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-orange)]/15 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-[var(--accent-orange)]">
+                    <IcPaint />
                     {project.tag}
-                  </p>
-                  <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{project.title}</h2>
-                  <p className="max-w-2xl text-sm text-[var(--muted)] sm:text-base">
+                  </span>
+                  <h2 className="text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-3xl">
+                    {project.title}
+                  </h2>
+                  <p className="max-w-lg text-sm leading-relaxed text-[var(--muted)]">
                     {project.description}
                   </p>
                 </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveProject(project.id)}
-                    className="rounded-full border border-[var(--card-border)] bg-[var(--card-background)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-[var(--card-foreground)] transition hover:scale-[1.02] hover:border-[var(--card-foreground)]"
-                  >
+                <div className="shrink-0">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold uppercase tracking-widest text-[var(--foreground)] transition group-hover:border-[var(--accent-orange)]/40 group-hover:bg-[var(--accent-orange)] group-hover:text-white group-hover:shadow-[0_4px_20px_rgba(253,123,65,0.4)]">
                     {project.action}
-                  </button>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                    >
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </span>
                 </div>
               </div>
-            </li>
+            </button>
           ))}
-        </ul>
-      </section>
+        </div>
+
+        {/* Back to home */}
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm font-medium text-[var(--muted)] transition hover:text-[var(--accent-orange)]"
+        >
+          <IcBack />
+          Back to home
+        </Link>
+      </div>
     </main>
   );
 }

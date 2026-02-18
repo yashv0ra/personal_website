@@ -175,7 +175,7 @@ export default function ChatWidget({
     <div className={containerClassName}>
       {isOpen ? (
         <div
-          className={`overflow-hidden rounded-3xl border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_24px_80px_rgba(60,64,68,0.28)] ${panelWidthClassName}`}
+          className={`animate-slide-up overflow-hidden rounded-3xl border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_24px_80px_rgba(60,64,68,0.28)] ${panelWidthClassName}`}
         >
           <div
             className={`flex items-center justify-between bg-gradient-to-r from-[var(--accent-orange)] to-[#ffa574] px-4 py-3 ${
@@ -302,7 +302,7 @@ export default function ChatWidget({
             setOpen(true);
           }}
           aria-label={isOpen ? "Close chat" : "Open chat"}
-          className="group flex h-11 w-11 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_18px_60px_rgba(60,64,68,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_70px_rgba(60,64,68,0.32)] sm:h-12 sm:w-12"
+          className="chat-pulse group flex h-11 w-11 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[0_18px_60px_rgba(60,64,68,0.28)] transition hover:-translate-y-0.5 hover:border-[var(--accent-orange)] hover:text-[var(--accent-orange)] hover:shadow-[0_22px_70px_rgba(60,64,68,0.32)] sm:h-12 sm:w-12"
         >
           <svg
             aria-hidden="true"

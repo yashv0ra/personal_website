@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const nodeBase =
-  "absolute hidden h-44 w-44 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-center text-base font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)] shadow-[0_0_40px_rgba(253,123,65,0.25)] transition-transform duration-300 md:flex";
+  "absolute hidden h-44 w-44 items-center justify-center rounded-full border border-[var(--card-border)] bg-[var(--card-background)] text-center text-base font-semibold uppercase tracking-[0.18em] text-[var(--card-foreground)] shadow-[0_0_40px_rgba(253,123,65,0.25)] transition-all duration-300 md:flex hover:shadow-[0_0_60px_rgba(253,123,65,0.4)]";
 const mobileNodeBase =
   "flex items-center gap-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] px-4 py-3 text-[var(--card-foreground)] shadow-[0_12px_30px_rgba(253,123,65,0.2)]";
 
