@@ -3,6 +3,7 @@
 import {
   type FormEvent,
   type PointerEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -35,20 +36,20 @@ const MAX_HISTORY = 20;
 const DEFAULT_CHARADES_DAILY_GUESS_LIMIT = 30;
 const PALETTE = [
   "#000000",
-  "#404040",
-  "#787878",
-  "#B0B0B0",
-  "#FFFFFF",
-  "#E63946",
-  "#F77F00",
-  "#F4A261",
-  "#2A9D8F",
-  "#264653",
-  "#2E86AB",
-  "#4A90E2",
-  "#9B5DE5",
-  "#F15BB5",
-  "#7B2CBF",
+  "#1f2937",
+  "#6b7280",
+  "#d1d5db",
+  "#ffffff",
+  "#ef4444",
+  "#fb7185",
+  "#f97316",
+  "#eab308",
+  "#84cc16",
+  "#22c55e",
+  "#14b8a6",
+  "#3b82f6",
+  "#7c3aed",
+  "#d946ef",
 ];
 const TOOL_OPTIONS: Array<{ value: ToolName; label: string; description: string }> = [
   { value: "brush", label: "Brush", description: "Freehand sketch" },
@@ -117,7 +118,7 @@ function drawSelectOutline(
     return;
   }
   ctx.strokeStyle = color;
-  ctx.setLineDash([7, 5]);
+  ctx.setLineDash([4, 4]);
   ctx.lineWidth = 2;
   ctx.strokeRect(safeRect.x + 0.5, safeRect.y + 0.5, safeRect.width, safeRect.height);
   ctx.setLineDash([]);
@@ -174,6 +175,7 @@ function PaintCharadesProject() {
   const [tool, setTool] = useState<ToolName>("brush");
   const [color, setColor] = useState("#1f2937");
   const [brushSize, setBrushSize] = useState(8);
+  const [isCharadesMode, setIsCharadesMode] = useState(true);
   const [history, setHistory] = useState<string[]>([]);
   const [redoHistory, setRedoHistory] = useState<string[]>([]);
   const [activeSelection, setActiveSelection] = useState<RectRegion | null>(null);
@@ -200,6 +202,15 @@ function PaintCharadesProject() {
   const selectedRef = useRef<RectRegion | null>(null);
   const lastPointerIdRef = useRef<number | null>(null);
   const background = "#ffffff";
+  const charadesLockedTools = useMemo(
+    () => new Set<ToolName>(["line", "rectangle", "circle"]),
+    [],
+  );
+
+  const isToolLocked = useCallback(
+    (value: ToolName) => isCharadesMode && charadesLockedTools.has(value),
+    [isCharadesMode, charadesLockedTools],
+  );
 
   const latestCanvas = useMemo(() => {
     return history.at(-1) ?? "";
@@ -256,6 +267,13 @@ function PaintCharadesProject() {
     };
   }, [localRateState.cooldownMs]);
 
+  useEffect(() => {
+    if (!isCharadesMode || !isToolLocked(tool)) {
+      return;
+    }
+    setTool("brush");
+  }, [isCharadesMode, isToolLocked, tool]);
+
   const pushHistory = () => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -288,31 +306,10 @@ function PaintCharadesProject() {
     image.src = imageUrl;
   };
 
-  const clearOverlay = () => {
-    const overlay = overlayRef.current;
-    if (!overlay) {
-      return;
-    }
-    const ctx = overlay.getContext("2d");
-    if (!ctx) {
-      return;
-    }
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  };
-
   const updateSelection = (rect: RectRegion | null) => {
     const normalized = rect ? normalizeRect(rect) : null;
     setActiveSelection(normalized);
     selectedRef.current = normalized;
-    clearOverlay();
-    if (!normalized) {
-      return;
-    }
-    const overlay = overlayRef.current;
-    if (!overlay) {
-      return;
-    }
-    drawSelectOutline(overlay, normalized, "#3b82f6");
   };
 
   const setDefaultsForDrawing = (ctx: CanvasRenderingContext2D) => {
@@ -324,6 +321,9 @@ function PaintCharadesProject() {
 
   const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0 && event.button !== undefined) {
+      return;
+    }
+    if (isToolLocked(tool)) {
       return;
     }
     const canvas = canvasRef.current;
@@ -490,7 +490,6 @@ function PaintCharadesProject() {
     snapshotRef.current = null;
     pendingRegionRef.current = null;
     lastPointerIdRef.current = null;
-    clearOverlay();
   };
 
   const handleSaveImage = () => {
@@ -523,7 +522,7 @@ function PaintCharadesProject() {
       }
       return next;
     });
-    setActiveSelection(null);
+    updateSelection(null);
   };
 
   const handleRedo = () => {
@@ -537,7 +536,7 @@ function PaintCharadesProject() {
     setRedoHistory((current) => current.slice(1));
     setHistory((current) => [...current, next].slice(-MAX_HISTORY));
     restoreHistory(next);
-    setActiveSelection(null);
+    updateSelection(null);
   };
 
   const handleClearCanvas = () => {
@@ -573,7 +572,6 @@ function PaintCharadesProject() {
     ctx.fillStyle = color;
     ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
     updateSelection(null);
-    setActiveSelection(null);
   };
 
   const handleCopySelection = () => {
@@ -590,25 +588,6 @@ function PaintCharadesProject() {
       return;
     }
     setClipboardImage(ctx.getImageData(rect.x, rect.y, rect.width, rect.height));
-  };
-
-  const handleCutSelection = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !selectedRef.current) {
-      return;
-    }
-    const rect = selectedRef.current;
-    if (rect.width <= 0 || rect.height <= 0) {
-      return;
-    }
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      return;
-    }
-    pushHistory();
-    setClipboardImage(ctx.getImageData(rect.x, rect.y, rect.width, rect.height));
-    ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
-    updateSelection(null);
   };
 
   const handlePasteSelection = () => {
@@ -724,6 +703,22 @@ function PaintCharadesProject() {
   };
 
   const hasSelection = Boolean(activeSelection && activeSelection.width > 0 && activeSelection.height > 0);
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) {
+      return;
+    }
+    const overlayCtx = overlay.getContext("2d");
+    if (!overlayCtx) {
+      return;
+    }
+    overlayCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    if (!activeSelection || activeSelection.width <= 0 || activeSelection.height <= 0) {
+      return;
+    }
+    drawSelectOutline(overlay, activeSelection, "#3b82f6");
+  }, [activeSelection]);
+
   const charadesCooldownMs = localRateState.cooldownMs ?? 0;
   const hasRemainingGuesses =
     localRateState.limit == null || localRateState.remaining == null || localRateState.remaining > 0;
@@ -752,14 +747,35 @@ function PaintCharadesProject() {
       <div className="grid h-full gap-3 xl:grid-cols-[250px_1fr]">
         <aside className="space-y-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card-background)] p-3">
           <div className="space-y-2">
+            <label className="flex items-center justify-between rounded-lg border border-[var(--card-border)] bg-[var(--card-background)] px-2 py-2">
+              <span className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">
+                Charades mode
+              </span>
+              <input
+                type="checkbox"
+                checked={isCharadesMode}
+                onChange={(event) => setIsCharadesMode(event.target.checked)}
+                className="h-4 w-4 cursor-pointer accent-[var(--accent-orange)]"
+              />
+            </label>
+          </div>
+
+          <div className="space-y-2">
             <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Tools</p>
             <div className="grid grid-cols-2 gap-2">
               {TOOL_OPTIONS.map((entry) => (
                 <button
                   key={entry.value}
                   type="button"
-                  onClick={() => setTool(entry.value)}
-                  className={`rounded-lg border px-2 py-2 text-left text-[0.62rem] font-semibold uppercase tracking-[0.12em] transition sm:text-[0.7rem] ${
+                  onClick={() => {
+                    if (!isToolLocked(entry.value)) {
+                      setTool(entry.value);
+                    }
+                  }}
+                  disabled={isToolLocked(entry.value)}
+                  title={entry.label}
+                  aria-label={entry.label}
+                  className={`rounded-lg border px-2 py-2 text-left text-[0.62rem] font-semibold uppercase tracking-[0.12em] transition sm:text-[0.7rem] disabled:cursor-not-allowed disabled:opacity-45 ${
                     tool === entry.value
                       ? "border-[var(--card-foreground)] bg-[var(--card-foreground)] text-[var(--card-background)]"
                       : "border-[var(--card-border)] bg-[var(--card-background)] text-[var(--card-muted)] hover:border-[var(--card-foreground)] hover:text-[var(--card-foreground)]"
@@ -770,7 +786,6 @@ function PaintCharadesProject() {
               ))}
             </div>
           </div>
-
           <div className="space-y-2">
             <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Color</p>
             <div className="grid grid-cols-5 gap-2">
@@ -799,7 +814,6 @@ function PaintCharadesProject() {
               />
             </label>
           </div>
-
           <div className="space-y-2">
             <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Brush</p>
             <input
@@ -813,7 +827,6 @@ function PaintCharadesProject() {
             />
             <p className="text-[0.65rem] text-[var(--card-muted)]">{brushSize}px</p>
           </div>
-
           <div className="space-y-2">
             <p className="text-[0.67rem] font-semibold uppercase tracking-[0.14em] text-[var(--card-muted)]">Actions</p>
             <div className="grid grid-cols-2 gap-2">
@@ -861,7 +874,7 @@ function PaintCharadesProject() {
               <button
                 type="button"
                 onClick={handleCopySelection}
-                disabled={!hasSelection}
+                disabled={isCharadesMode || !hasSelection}
                 title="Copy selected area"
                 aria-label="Copy selected area"
                 className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
@@ -870,23 +883,23 @@ function PaintCharadesProject() {
               </button>
               <button
                 type="button"
-                onClick={handleCutSelection}
-                disabled={!hasSelection}
-                title="Cut selected area"
-                aria-label="Cut selected area"
-                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-              >
-                Cut
-              </button>
-              <button
-                type="button"
                 onClick={handlePasteSelection}
-                disabled={!clipboardImage}
+                disabled={isCharadesMode || !clipboardImage}
                 title="Paste"
                 aria-label="Paste"
                 className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
               >
                 Paste
+              </button>
+              <button
+                type="button"
+                onClick={handleFillSelection}
+                disabled={isCharadesMode || !hasSelection}
+                title="Fill selected area"
+                aria-label="Fill selected area"
+                className="rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
+              >
+                Fill region
               </button>
               <button
                 type="button"
@@ -899,16 +912,6 @@ function PaintCharadesProject() {
                 Delete
               </button>
             </div>
-              <button
-                type="button"
-                onClick={handleFillSelection}
-                disabled={!hasSelection}
-                title="Fill selected area"
-                aria-label="Fill selected area"
-                className="w-full rounded-lg border border-[var(--card-border)] px-2 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[var(--card-foreground)] transition hover:border-[var(--card-foreground)] disabled:opacity-40"
-              >
-                Fill region
-              </button>
           </div>
         </aside>
 
