@@ -46,6 +46,20 @@ function LabIcon({ className = "h-10 w-10" }: { className?: string }) {
   );
 }
 
+function BarsIcon({ className = "h-10 w-10" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className={className}
+      fill="currentColor"
+    >
+      <path d="M4 2.5h9.2c4.53 0 7.3 2.82 7.3 6.63 0 3.9-2.82 6.67-7.3 6.67H9.8v5.7H4V2.5Zm5.8 4.76v3.79h2.67c1.45 0 2.3-.76 2.3-1.9 0-1.19-.84-1.89-2.3-1.89H9.8Z" />
+      <path d="M9.8 2.5h2.18v19.05H9.8Z" opacity="0.18" />
+    </svg>
+  );
+}
+
 export default function SpiderWeb() {
   return (
     <div className="relative w-full max-w-5xl">
@@ -77,6 +91,23 @@ export default function SpiderWeb() {
               </p>
             </div>
           </Link>
+          <a
+            href="https://purduebarlines.web.app"
+            target="_blank"
+            rel="noreferrer"
+            className={`${mobileNodeBase} transition hover:scale-[1.01]`}
+            aria-label="Open Purdue Bar Lines"
+          >
+            <BarsIcon className="h-8 w-8" />
+            <div className="text-left">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--card-foreground)]">
+                Purdue Bar Lines
+              </p>
+              <p className="mt-1 text-xs text-[var(--card-muted)]">
+                Visit the live Purdue Bar Lines experience.
+              </p>
+            </div>
+          </a>
         </div>
       </div>
 
@@ -225,15 +256,23 @@ export default function SpiderWeb() {
 
         <Link
           href="/lab"
-          className={`${nodeBase} right-[6%] top-[20%] z-10 flex-col gap-2 hover:scale-105`}
+          className={`${nodeBase} left-1/2 top-[20%] z-10 flex-col gap-2 -translate-x-1/2 hover:scale-105`}
           aria-label="Open lab projects"
         >
           <LabIcon />
           <span>Lab</span>
-          <span className="rounded-full border border-[var(--card-border)] px-4 py-1 text-[0.65rem] font-semibold tracking-[0.2em] text-[var(--card-muted)]">
-            PROJECTS
-          </span>
         </Link>
+
+        <a
+          href="https://purduebarlines.web.app"
+          target="_blank"
+          rel="noreferrer"
+          className={`${nodeBase} right-[6%] top-[20%] z-10 flex-col gap-2 hover:scale-105`}
+          aria-label="Open Purdue Bar Lines"
+        >
+          <BarsIcon />
+          <span className="px-5 leading-tight">Purdue Bar Lines</span>
+        </a>
       </div>
     </div>
   );
