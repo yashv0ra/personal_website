@@ -1,6 +1,8 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { resume } from "@/lib/resume";
 import FloatingTermsBox from "@/components/FloatingTermsBox";
+import ScrollReveal from "@/components/ScrollReveal";
 
 type TimelineItem = {
   title: string;
@@ -9,47 +11,6 @@ type TimelineItem = {
   bullets: string[];
   tags?: string[];
 };
-
-type TimelineTone = "light" | "ivory";
-
-type TimelineSectionConfig = {
-  title: string;
-  hint?: string;
-  tone?: TimelineTone;
-  items: TimelineItem[];
-};
-
-const lightTone = {
-  card: "bg-[var(--card-background)] text-[var(--card-foreground)]",
-  border: "border-[var(--card-border)]",
-  muted: "text-[var(--card-muted)]",
-  line: "bg-[var(--card-border)]",
-  item: "bg-white/90 border-[var(--card-border)]",
-  badge: "border-[var(--card-border)] text-[var(--card-muted)] bg-white/80",
-  dotOuter:
-    "border-[var(--card-border)] bg-[var(--accent-charcoal)] shadow-[0_0_16px_rgba(253,123,65,0.35)]",
-  dotInner: "bg-[var(--accent-orange)]",
-  hint: "text-[var(--muted)]",
-} as const;
-
-const timelineTones = {
-  light: lightTone,
-  ivory: lightTone,
-} as const;
-
-const timelineSections: TimelineSectionConfig[] = [
-  {
-    title: "Experience Timeline",
-    hint: "Most recent first",
-    tone: "light",
-    items: resume.experience,
-  },
-  {
-    title: "Leadership and Involvement",
-    tone: "light",
-    items: resume.leadership,
-  },
-];
 
 function splitCsvTerms(value: string): string[] {
   return value
@@ -70,200 +31,246 @@ const floatingTerms = [
   ...resume.ask.map((label) => ({ label, category: "Ask Me About" as const })),
 ];
 
-function ResumeCard({
-  children,
-  tone = "light",
-  className = "",
+function SectionHeading({
+  index,
+  title,
+  hint,
 }: {
-  children: ReactNode;
-  tone?: TimelineTone;
-  className?: string;
+  index: string;
+  title: string;
+  hint?: string;
 }) {
-  const styles = timelineTones[tone];
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <span className="text-sm font-semibold text-[var(--accent-orange)]">{index}</span>
+      <h2 className="font-display text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-3xl">
+        {title}
+      </h2>
+      {hint ? (
+        <span className="ml-auto text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">
+          {hint}
+        </span>
+      ) : null}
+    </div>
+  );
+}
 
+function PaperCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`rounded-3xl border p-4 shadow-[0_20px_60px_rgba(60,64,68,0.2)] sm:p-6 ${styles.card} ${styles.border} ${className}`}
+      className={`rounded-2xl border border-black/5 bg-[var(--card-background)] text-[var(--card-foreground)] shadow-[var(--shadow-card)] ${className}`}
     >
       {children}
     </div>
   );
 }
 
+function DateBadge({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full bg-black/[0.06] px-3 py-1 text-xs font-medium text-[var(--card-muted)]">
+      {children}
+    </span>
+  );
+}
+
 function TimelineSection({
+  index,
   title,
   hint,
   items,
-  tone = "light",
-}: TimelineSectionConfig) {
-  const styles = timelineTones[tone];
-
+}: {
+  index: string;
+  title: string;
+  hint?: string;
+  items: TimelineItem[];
+}) {
   return (
-    <section className="space-y-3 sm:space-y-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="resume-heading">{title}</h2>
-        {hint ? (
-          <span className={`text-[0.68rem] uppercase tracking-[0.18em] sm:text-xs sm:tracking-[0.3em] ${styles.hint}`}>
-            {hint}
-          </span>
-        ) : null}
-      </div>
-      <div
-        className={`rounded-3xl border p-4 shadow-[0_20px_60px_rgba(60,64,68,0.2)] sm:p-8 lg:p-10 ${styles.card} ${styles.border}`}
-      >
-        <div className="relative">
-          <div className={`absolute bottom-6 left-3 top-6 w-px sm:bottom-8 sm:left-5 sm:top-8 ${styles.line}`} />
-          <div className="space-y-5 sm:space-y-8">
-            {items.map((item) => (
-              <article
-                key={`${item.title}-${item.date}`}
-                className="relative pl-8 sm:pl-12"
-              >
-                <div
-                  className={`absolute left-3 top-6 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full border sm:left-5 sm:top-8 sm:h-6 sm:w-6 ${styles.dotOuter}`}
-                >
-                  <div
-                    className={`h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5 ${styles.dotInner}`}
-                  />
+    <ScrollReveal>
+      <section className="space-y-4">
+        <SectionHeading index={index} title={title} hint={hint} />
+        <PaperCard className="divide-y divide-black/[0.07]">
+          {items.map((item) => (
+            <article key={`${item.title}-${item.date}`} className="p-5 sm:p-7">
+              <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+                <div className="min-w-0">
+                  <h3 className="font-display text-lg font-semibold tracking-tight sm:text-xl">
+                    {item.title}
+                  </h3>
+                  <p className="mt-0.5 text-sm font-medium text-[var(--accent-orange-ink)]">
+                    {item.subtitle}
+                  </p>
                 </div>
-                <div
-                  className={`rounded-2xl border p-4 shadow-[0_12px_30px_rgba(60,64,68,0.12)] sm:p-6 ${styles.item}`}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <h3 className="text-base font-semibold sm:text-lg">{item.title}</h3>
-                      <p className={`text-xs italic sm:text-sm ${styles.muted}`}>
-                        {item.subtitle}
-                      </p>
-                    </div>
-                    <span className={`text-xs sm:text-sm ${styles.muted}`}>
-                      {item.date}
+                <DateBadge>{item.date}</DateBadge>
+              </div>
+              <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--card-muted)] sm:mt-4">
+                {item.bullets.map((bullet) => (
+                  <li key={bullet} className="flex gap-2.5">
+                    <span aria-hidden="true" className="mt-[0.55rem] h-1 w-1 shrink-0 rounded-full bg-[var(--accent-orange)]" />
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+              {item.tags?.length ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {item.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-[var(--card-border)] px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-[var(--card-muted)]"
+                    >
+                      {tag}
                     </span>
-                  </div>
-                  <ul
-                    className={`mt-3 list-disc space-y-2 pl-4 text-[0.9rem] leading-relaxed sm:mt-4 sm:pl-5 sm:text-sm ${styles.muted}`}
-                  >
-                    {item.bullets.map((bullet) => (
-                      <li key={bullet}>{bullet}</li>
-                    ))}
-                  </ul>
-                  {item.tags?.length ? (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {item.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className={`rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] ${styles.badge}`}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
+                  ))}
                 </div>
-              </article>
-            ))}
+              ) : null}
+            </article>
+          ))}
+        </PaperCard>
+      </section>
+    </ScrollReveal>
+  );
+}
+
+function Sidebar() {
+  return (
+    <aside className="lg:sticky lg:top-8 lg:self-start">
+      <div className="rounded-2xl border border-[var(--line-soft)] bg-white/[0.04] p-6 sm:p-7">
+        <div className="flex items-center gap-4 lg:flex-col lg:items-start">
+          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full ring-2 ring-[var(--accent-orange)]/60 ring-offset-2 ring-offset-[var(--surface-1)] lg:h-24 lg:w-24">
+            <Image
+              src="/profile.jpeg"
+              alt="Portrait of Yash Vora"
+              fill
+              sizes="96px"
+              className="object-cover"
+            />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--foreground)] lg:mt-4 lg:text-3xl">
+              {resume.basics.name}
+            </h1>
+            <p className="mt-1 text-sm text-[var(--muted)]">{resume.basics.location}</p>
           </div>
         </div>
+
+        <div className="mt-6 space-y-2.5 border-t border-[var(--line-soft)] pt-5 text-sm">
+          <a
+            href={`mailto:${resume.basics.email}`}
+            className="block truncate text-[var(--muted)] transition-colors hover:text-[var(--accent-orange)]"
+          >
+            {resume.basics.email}
+          </a>
+          {resume.basics.links.map((link) => (
+            <a
+              key={link.url}
+              href={link.url}
+              target="_blank"
+              rel="noreferrer"
+              className="block truncate text-[var(--muted)] transition-colors hover:text-[var(--accent-orange)]"
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+
+        <a
+          href="/resume.png"
+          download
+          className="lift mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--accent-orange)] px-5 py-2.5 text-sm font-semibold text-[#2a1607] transition-colors hover:bg-[var(--accent-orange-deep)] hover:text-[#fff5ee]"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M12 3v12" />
+            <path d="M7 10l5 5 5-5" />
+            <path d="M5 21h14" />
+          </svg>
+          Download resume
+        </a>
+
+        <p className="mt-5 hidden text-xs leading-relaxed text-[var(--muted)]/80 lg:block">
+          Questions? The chat in the corner knows this resume inside out.
+        </p>
       </div>
-    </section>
+    </aside>
   );
 }
 
 export default function Resume() {
   return (
-    <div className="space-y-7 text-[var(--foreground)] sm:space-y-10">
-      <header className="space-y-2.5 text-center sm:space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-[var(--card-foreground)] sm:text-3xl">
-          {resume.basics.name}
-        </h1>
-        <p className="text-xs text-[var(--card-muted)] sm:text-sm">
-          {resume.basics.location}
-          <span className="mx-2 hidden sm:inline">|</span>
-          <span className="block sm:inline">{" "}</span>
-          <a
-            href={`mailto:${resume.basics.email}`}
-            className="font-medium text-[var(--card-foreground)] underline-offset-4 hover:underline"
-          >
-            {resume.basics.email}
-          </a>
-        </p>
-        <p className="text-xs text-[var(--card-muted)] sm:text-sm">
-          {resume.basics.links.map((link, index) => (
-            <span key={link.url}>
-              <a
-                href={link.url}
-                className="font-medium text-[var(--card-foreground)] underline-offset-4 hover:underline"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {link.label}
-              </a>
-              {index < resume.basics.links.length - 1 ? <span className="mx-2">|</span> : null}
-            </span>
-          ))}
-        </p>
-        <div>
-          <a
-            href="/resume.png"
-            download
-            className="inline-flex items-center rounded-full border border-[var(--card-border)] bg-white/80 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--accent-charcoal)] transition hover:bg-[var(--accent-orange)]/20 sm:text-xs sm:tracking-[0.2em]"
-          >
-            Download Resume
-          </a>
-        </div>
-      </header>
+    <div className="grid gap-8 lg:grid-cols-[300px_1fr] lg:gap-10">
+      <Sidebar />
 
-      <section id="about" className="space-y-2.5 sm:space-y-3">
-        <h2 className="resume-heading">{resume.about.heading ?? "About"}</h2>
-        <ResumeCard className="text-[0.93rem] text-[var(--card-muted)] sm:text-sm">
-          <p className="leading-relaxed">{resume.about.summary}</p>
-        </ResumeCard>
-      </section>
+      <div className="min-w-0 space-y-10 sm:space-y-12">
+        <ScrollReveal>
+          <section id="about" className="space-y-4">
+            <SectionHeading index="01" title={resume.about.heading ?? "About"} />
+            <PaperCard className="p-5 sm:p-7">
+              <p className="max-w-[68ch] text-[0.95rem] leading-relaxed text-[var(--card-muted)]">
+                {resume.about.summary}
+              </p>
+            </PaperCard>
+          </section>
+        </ScrollReveal>
 
-      <section className="space-y-2.5 sm:space-y-3">
-        <h2 className="resume-heading">Learn more about me</h2>
-        <ResumeCard className="p-6 sm:p-8">
-          <FloatingTermsBox terms={floatingTerms} />
-        </ResumeCard>
-      </section>
+        <ScrollReveal>
+          <section className="space-y-4">
+            <SectionHeading index="02" title="Learn more about me" hint="Click a topic to ask the chat" />
+            <FloatingTermsBox terms={floatingTerms} />
+          </section>
+        </ScrollReveal>
 
-      {timelineSections.map((section) => (
-        <TimelineSection key={section.title} {...section} />
-      ))}
+        <TimelineSection
+          index="03"
+          title="Experience"
+          hint="Most recent first"
+          items={resume.experience}
+        />
 
-      <section className="space-y-3 sm:space-y-4">
-        <h2 className="resume-heading">Education</h2>
-        <ResumeCard className="text-[0.92rem] text-[var(--card-muted)] sm:text-sm">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-[0.98rem] font-semibold text-[var(--card-foreground)] sm:text-base">
-              {resume.education.school}
-            </h3>
-            <span className="text-xs text-[var(--card-muted)] sm:text-sm">
-              {resume.education.date}
-            </span>
-          </div>
-          <p className="mt-2 text-sm italic">{resume.education.degree}</p>
-          <p className="text-sm">{resume.education.gpa}</p>
-          <p className="mt-3">
-            <span className="font-semibold text-[var(--card-foreground)]">
-              Relevant Coursework:
-            </span>{" "}
-            {resume.education.coursework}
-          </p>
-          <p className="mt-1">
-            <span className="font-semibold text-[var(--card-foreground)]">
-              Awards:
-            </span>{" "}
-            {resume.education.awards}
-          </p>
-          <ul className="mt-3 list-disc space-y-1 pl-5">
-            {resume.education.programs.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </ResumeCard>
-      </section>
+        <TimelineSection index="04" title="Leadership" items={resume.leadership} />
 
+        <ScrollReveal>
+          <section className="space-y-4">
+            <SectionHeading index="05" title="Education" />
+            <PaperCard className="p-5 text-sm text-[var(--card-muted)] sm:p-7">
+              <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+                <div>
+                  <h3 className="font-display text-lg font-semibold tracking-tight text-[var(--card-foreground)] sm:text-xl">
+                    {resume.education.school}
+                  </h3>
+                  <p className="mt-0.5 text-sm font-medium text-[var(--accent-orange-ink)]">
+                    {resume.education.degree}
+                  </p>
+                </div>
+                <DateBadge>{resume.education.date}</DateBadge>
+              </div>
+              <p className="mt-3">{resume.education.gpa}</p>
+              <p className="mt-3">
+                <span className="font-semibold text-[var(--card-foreground)]">Relevant coursework:</span>{" "}
+                {resume.education.coursework}
+              </p>
+              <p className="mt-1.5">
+                <span className="font-semibold text-[var(--card-foreground)]">Awards:</span>{" "}
+                {resume.education.awards}
+              </p>
+              <ul className="mt-4 space-y-2">
+                {resume.education.programs.map((item) => (
+                  <li key={item} className="flex gap-2.5">
+                    <span aria-hidden="true" className="mt-[0.55rem] h-1 w-1 shrink-0 rounded-full bg-[var(--accent-orange)]" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </PaperCard>
+          </section>
+        </ScrollReveal>
+      </div>
     </div>
   );
 }

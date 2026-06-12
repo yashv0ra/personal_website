@@ -69,6 +69,13 @@ export default function ChatWidget({
     messagesRef.current = messages;
   }, [messages]);
 
+  // On small screens the always-open panel would cover the page, so start it minimized.
+  useEffect(() => {
+    if (!isFloating && window.matchMedia("(max-width: 767px)").matches) {
+      setIsMinimized(true);
+    }
+  }, [isFloating]);
+
   const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) {

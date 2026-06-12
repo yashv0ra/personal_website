@@ -1438,7 +1438,7 @@ export default function LabPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--accent-orange)]">
             Lab
           </p>
-          <h1 className="text-4xl font-bold tracking-tight text-[var(--foreground)] sm:text-5xl">
+          <h1 className="font-display text-4xl font-bold tracking-tight text-[var(--foreground)] sm:text-5xl">
             Experiments
           </h1>
           <p className="mx-auto max-w-md text-base text-[var(--muted)]">
@@ -1462,7 +1462,7 @@ export default function LabPage() {
                     <IcPaint />
                     {project.tag}
                   </span>
-                  <h2 className="text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-3xl">
+                  <h2 className="font-display text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-3xl">
                     {project.title}
                   </h2>
                   <p className="max-w-lg text-sm leading-relaxed text-[var(--muted)]">

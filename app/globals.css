@@ -1,20 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  --font-geist-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-geist-sans: var(--font-body), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-geist-mono: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  --background: #3c4044;
-  --foreground: #ffffff;
-  --muted: rgba(255, 255, 255, 0.7);
-  --dot-color: rgba(255, 255, 255, 0.14);
-  --card-background: #ffffff;
-  --card-foreground: #3c4044;
-  --card-muted: rgba(60, 64, 68, 0.75);
-  --card-border: rgba(60, 64, 68, 0.35);
+
+  /* Surfaces: warm charcoal layers, deepest to most raised */
+  --surface-0: #26282c;
+  --surface-1: #2f3236;
+  --surface-2: #3a3e43;
+  --background: var(--surface-1);
+
+  --foreground: #f5f3f0;
+  --muted: rgba(245, 243, 240, 0.66);
+  --line-soft: rgba(245, 243, 240, 0.1);
+  --dot-color: rgba(245, 243, 240, 0.13);
+
+  /* Paper cards: warm ivory instead of pure white */
+  --card-background: #fbfaf8;
+  --card-foreground: #303338;
+  --card-muted: rgba(48, 51, 56, 0.72);
+  --card-border: rgba(48, 51, 56, 0.16);
+
   --accent-orange: #fd7b41;
+  --accent-orange-deep: #e8632a;
+  /* darker orange for small text on light paper cards */
+  --accent-orange-ink: #bc4a17;
   --accent-peach: #edbf9b;
-  --accent-charcoal: #3c4044;
+  --accent-charcoal: #33363a;
   --accent-ivory: #dddcdb;
+
+  --shadow-card: 0 1px 2px rgba(20, 21, 24, 0.18), 0 16px 48px rgba(20, 21, 24, 0.22);
+  --shadow-glow: 0 0 0 1px rgba(253, 123, 65, 0.22), 0 14px 44px rgba(253, 123, 65, 0.16);
 }
 
 @theme inline {
@@ -30,15 +46,14 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans);
   min-height: 100%;
-  overflow-x: hidden;
+  /* clip instead of hidden so position: sticky keeps working */
+  overflow-x: clip;
   -webkit-text-size-adjust: 100%;
 }
 
-.dot-grid {
-  position: relative;
-  background-color: var(--background);
-  background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
-  background-size: 28px 28px;
+.font-display {
+  font-family: var(--font-display), var(--font-geist-sans);
+  letter-spacing: -0.02em;
 }
 
 .interactive-dot-field {
@@ -48,16 +63,6 @@ body {
   width: 100%;
   height: 100%;
   pointer-events: none;
-}
-
-.resume-heading {
-  border-bottom: 1px solid var(--card-border);
-  padding-bottom: 0.35rem;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  font-weight: 600;
-  color: var(--card-foreground);
 }
 
 .river-flow {
@@ -350,6 +355,19 @@ body {
   animation: pulse-glow 2.4s ease-in-out infinite;
 }
 
+/* ---------- Scroll reveal ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* ---------- Page entrance ---------- */
 @keyframes fade-in-up {
   from {
@@ -370,14 +388,6 @@ body {
 .stagger-in > *:nth-child(2) { animation-delay: 0.22s; }
 .stagger-in > *:nth-child(3) { animation-delay: 0.38s; }
 .stagger-in > *:nth-child(4) { animation-delay: 0.52s; }
-
-/* ---------- Gradient text ---------- */
-.text-gradient {
-  background: linear-gradient(135deg, #ffffff 0%, var(--accent-peach) 50%, var(--accent-orange) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
 
 /* ---------- Chat button pulse ---------- */
 @keyframes chat-pulse {
@@ -424,5 +434,10 @@ body {
   }
   .animate-slide-up {
     animation: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
