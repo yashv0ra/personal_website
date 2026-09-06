@@ -30,7 +30,7 @@ async function run(name, options, test) {
 const fresh = page => page.addInitScript(() => sessionStorage.removeItem("yash-room-v1"));
 const ready = (page, card) => page.locator(`main[data-stage="room"][data-phase="ready"]${card ? `[data-card="${card}"]` : ""}`).waitFor();
 async function enter(page) {
-  await page.goto(base);
+  await page.goto(`${base}/cinematic`);
   await page.getByRole("button", { name: "click here", exact: true }).click();
   await ready(page, "About");
 }
@@ -98,7 +98,7 @@ await run("texture-timeout-fallback", { viewport: { width: 1000, height: 700 } }
 });
 
 await run("reduced-motion-timing", { viewport: { width: 1000, height: 700 }, reducedMotion: "reduce" }, async page => {
-  await fresh(page); await page.goto(base);
+  await fresh(page); await page.goto(`${base}/cinematic`);
   // Isolate the approved reduced-motion choreography from software-renderer
   // initialization; the room is deliberately preloaded behind the entrance.
   await page.locator('main[data-scene-ready="true"]').waitFor();

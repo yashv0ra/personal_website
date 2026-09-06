@@ -2,6 +2,14 @@
 
 This is the project record of the user's active goal. A handoff or passing build does not complete it. Continue iterating until the actual rendered experience satisfies the requirements below. Keep current evidence and remaining work in [CINEMATIC_HANDOFF.md](CINEMATIC_HANDOFF.md).
 
+## Latest approved placement and publication — 2026-09-06
+
+The user superseded the homepage placement and earlier branch-only restriction:
+
+> keep this all as an X icon in the top right of the normal landing page for the website. Then push it all to main and then to yashvora.net.
+
+The normal landing page stays at `/`. A 44px X link at its top right opens `/cinematic`, which retains the white entrance, room and replay. Resume/Lab opened from the room carry `from=cinematic` and return to the saved room; normal visits return to `/`. The user explicitly authorized merging to `main` and publishing through the existing yashvora.net deployment. Earlier no-main/no-deployment handoff instructions are superseded by this request. No separate permission step is required. Artistic quality and hardware-performance limitations must still be reported honestly.
+
 ## User's objective, verbatim
 
 > Okay go! This is a goal because you are supposed to iterate, use playwright and look at the output, and then iterate. It should look like it was straight out of a professional looking animation. Please look up professional visual designers and stuff to make it as visually interesting as possible. Use max amount of research. Pretend you are a visual professional being paid $100k for this. Keep iterating until it looks like it is straight out of a real horror/suspense movie. Iterate every detail. Make it look as realistic as possible.

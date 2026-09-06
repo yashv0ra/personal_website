@@ -2,13 +2,13 @@
   {
     "name": "desktop",
     "passed": true,
-    "introMs": 15599.19999999553,
-    "switchMs": 1133.1000000014901,
+    "introMs": 3807.7000000001863,
+    "switchMs": 1287.7000000001863,
     "contextLossReplay": true,
     "frames": {
       "renderer": "Chromium SwiftShader software WebGL",
-      "medianMs": 91.59999999999854,
-      "p95Ms": 100
+      "medianMs": 16.69999999999709,
+      "p95Ms": 16.799999999995634
     },
     "errors": []
   },

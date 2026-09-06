@@ -14,6 +14,7 @@ export type RoomController = {
 type Hooks = {
   onState: (phase: RoomPhase, index: CardIndex) => void;
   onBounds: (bounds: CardBounds) => void;
+  onControlsReveal: () => void;
   onFailure: () => void;
 };
 
@@ -67,22 +68,23 @@ function cardTexture(index: CardIndex): THREE.CanvasTexture {
   return texture;
 }
 
-export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced: boolean): Promise<RoomController> {
+export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced: boolean, signal?: AbortSignal): Promise<RoomController> {
+  signal?.throwIfAborted();
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#080b0b");
   scene.fog = new THREE.FogExp2("#080b0b", 0.026);
-  const renderer = new THREE.WebGLRenderer({ antialias: !initialReduced, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  renderer.shadowMap.enabled = !initialReduced;
+  renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.domElement.setAttribute("aria-hidden", "true");
   host.appendChild(renderer.domElement);
   let disposed = false, reduced = initialReduced, entered = false, active = false, running = false;
   let index: CardIndex = 0, incoming: CardIndex = 1, direction = 1;
   let phase: RoomPhase = "ready", elapsed = 0, previous = 0, raf = 0;
-  let cameraDistance = 7, frames = 0, slowFrames = 0, degraded = false;
+  let cameraDistance = 7, frames = 0, slowFrames = 0, degraded = false, controlsRevealed = false;
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 35);
   const target = new THREE.Vector3(0, 2.35, 0);
   // A dim, neutral reflection field lets rough metal read as metal without
@@ -90,18 +92,47 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
   const environment = new RoomEnvironment();
   const pmrem = new THREE.PMREMGenerator(renderer);
   const environmentTarget = pmrem.fromScene(environment, 0.04);
-  scene.environment = environmentTarget.texture;
-  scene.environmentIntensity = 0.11;
-  if (initialReduced) scene.environment = null;
+  // Only metal needs this reflection field; concrete retains motivated light.
   environment.dispose();
   pmrem.dispose();
   const allTextures = new Set<THREE.Texture>();
   const loader = new THREE.TextureLoader();
-  const maps = await Promise.allSettled([
-    loader.loadAsync("/room/concrete-color.jpg"),
-    loader.loadAsync("/room/concrete-normal.jpg"),
-    loader.loadAsync("/room/concrete-roughness.jpg"),
-  ]);
+  // Cancellation also covers construction, before React owns the controller.
+  // TextureLoader cannot abort a network request; dispose both its immediate
+  // handle and any late result, and never attach a cancelled scene.
+  let loadingCancelled = false;
+  const pending = ["color", "normal", "roughness"].map(kind => new Promise<THREE.Texture>((resolve, reject) => {
+    const texture = loader.load(`/room/concrete-${kind}.jpg`, loaded => {
+      if (loadingCancelled) loaded.dispose();
+      resolve(loaded);
+    }, undefined, reject);
+    allTextures.add(texture);
+  }));
+  let cancelLoading: () => void = () => {};
+  const aborted = new Promise<never>((_, reject) => {
+    cancelLoading = () => {
+      loadingCancelled = true;
+      renderer.domElement.remove();
+      reject(new DOMException("Room construction cancelled", "AbortError"));
+    };
+    signal?.addEventListener("abort", cancelLoading, { once: true });
+  });
+  const earlyLoss = (event: Event) => { event.preventDefault(); cancelLoading(); hooks.onFailure(); };
+  renderer.domElement.addEventListener("webglcontextlost", earlyLoss);
+  let maps: PromiseSettledResult<THREE.Texture>[];
+  try {
+    maps = await Promise.race([Promise.allSettled(pending), aborted]);
+    signal?.throwIfAborted();
+    if (maps.some(result => result.status === "rejected")) throw new Error("Room textures could not be loaded");
+  } catch (error) {
+    loadingCancelled = true;
+    allTextures.forEach(texture => texture.dispose());
+    environmentTarget.dispose(); renderer.dispose(); renderer.domElement.remove();
+    throw error;
+  } finally {
+    signal?.removeEventListener("abort", cancelLoading);
+    renderer.domElement.removeEventListener("webglcontextlost", earlyLoss);
+  }
   function map(i: number, repeat: number) {
     const loaded = maps[i]; if (loaded.status !== "fulfilled") return null;
     const t = loaded.value.clone(); allTextures.add(loaded.value); allTextures.add(t);
@@ -111,10 +142,10 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
     t.needsUpdate = true;
     return t;
   }
-  const concrete = new THREE.MeshStandardMaterial({ color: "#777d78", map: map(0, 2.2), normalMap: map(1, 2.2), normalScale: new THREE.Vector2(0.4, 0.4), roughnessMap: map(2, 2.2), roughness: 0.95 });
-  const floorMat = new THREE.MeshStandardMaterial({ color: "#5a605b", map: map(0, 3), normalMap: map(1, 3), normalScale: new THREE.Vector2(0.3, 0.3), roughnessMap: map(2, 3), roughness: 0.73 });
-  const darkMetal = new THREE.MeshStandardMaterial({ color: "#242824", metalness: 0.75, roughness: 0.42 });
-  const agedMetal = new THREE.MeshStandardMaterial({ color: "#625d4c", metalness: 0.7, roughness: 0.5 });
+  const concrete = new THREE.MeshStandardMaterial({ color: "#777d78", map: map(0, 2.2), normalMap: map(1, 2.2), normalScale: new THREE.Vector2(0.24, 0.24), roughnessMap: map(2, 2.2), roughness: 0.95 });
+  const floorMat = new THREE.MeshStandardMaterial({ color: "#5a605b", map: map(0, 3), normalMap: map(1, 3), normalScale: new THREE.Vector2(0.2, 0.2), roughnessMap: map(2, 3), roughness: 0.73 });
+  const darkMetal = new THREE.MeshStandardMaterial({ color: "#242824", metalness: 0.75, roughness: 0.42, envMap: environmentTarget.texture, envMapIntensity: 0.11 });
+  const agedMetal = new THREE.MeshStandardMaterial({ color: "#625d4c", metalness: 0.7, roughness: 0.5, envMap: environmentTarget.texture, envMapIntensity: 0.11 });
   const black = new THREE.MeshStandardMaterial({ color: "#131612", roughness: 0.9 });
   function mesh(geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number, parent: THREE.Object3D = scene) {
     const o = new THREE.Mesh(geometry, material); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; parent.add(o); return o;
@@ -151,7 +182,7 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
   mesh(new THREE.TorusGeometry(0.481, 0.012, 8, 64), agedMetal, 0, 0.007, 0, lamp).rotation.x = Math.PI / 2;
   const reflector = mesh(new THREE.ConeGeometry(0.455, 0.29, 48, 1, true), new THREE.MeshStandardMaterial({ color: "#b6b0a0", metalness: 0.4, roughness: 0.4, side: THREE.BackSide }), 0, 0.13, 0, lamp);
   reflector.castShadow = false;
-  const bulbMat = new THREE.MeshPhysicalMaterial({ color: "#d7b785", emissive: "#6f3a15", emissiveIntensity: 0.32, roughness: 0.16, transmission: 0.42, thickness: 0.055, ior: 1.45, transparent: true, opacity: 0.74 });
+  const bulbMat = new THREE.MeshPhysicalMaterial({ color: "#d7b785", emissive: "#6f3a15", emissiveIntensity: 0.32, roughness: 0.16, transmission: 0, ior: 1.45, transparent: true, opacity: 0.24 });
   const bulb = mesh(new THREE.SphereGeometry(0.072, 20, 16), bulbMat, 0, 0.025, 0, lamp); bulb.castShadow = false; bulb.scale.set(0.82, 1.28, 0.82);
   const filamentMat = new THREE.MeshStandardMaterial({ color: "#9c7145", emissive: "#ffd39a", emissiveIntensity: 2.4, roughness: 0.5 });
   const filament = mesh(new THREE.TorusGeometry(0.021, 0.0024, 5, 18, Math.PI * 1.45), filamentMat, 0, 0.018, 0.005, lamp);
@@ -172,6 +203,7 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
   const spot = new THREE.SpotLight("#ffe6bf", 33, 13, Math.PI / 4.5, 0.82, 2);
   spot.position.set(0, 3.90, 1.1); spot.target.position.set(0, 1.05, -0.25); scene.add(spot, spot.target);
   spot.castShadow = true; spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -0.00015; spot.shadow.normalBias = 0.025;
+  spot.shadow.radius = 4; spot.shadow.intensity = 0.88;
   spot.shadow.camera.near = 0.1; spot.shadow.camera.far = 12;
   const fill = new THREE.HemisphereLight("#738b92", "#222014", 0.28); scene.add(fill);
   // Local reflected light makes the metal housing legible; follows the same ignition.
@@ -222,18 +254,25 @@ void main() {
     }
   }
 
+  for (const card of cards) card.traverse(object => {
+    if (object instanceof THREE.Mesh) {
+      const material = (object.material as THREE.Material).clone();
+      material.transparent = true;
+      object.material = material;
+    }
+  });
   const rand = seeded(832);
   const dustGeo = new THREE.BufferGeometry();
   const dust = new Float32Array(180 * 3);
   for (let i = 0; i < dust.length; i += 3) { dust[i] = (rand() - 0.5) * 5; dust[i + 1] = rand() * 4; dust[i + 2] = (rand() - 0.5) * 3; }
   dustGeo.setAttribute("position", new THREE.BufferAttribute(dust, 3));
   const dustMat = new THREE.PointsMaterial({ color: "#e7ddbd", size: 0.008, transparent: true, opacity: 0.17, depthWrite: false });
-  const motes = new THREE.Points(dustGeo, dustMat); motes.visible = !initialReduced; scene.add(motes);
+  const motes = new THREE.Points(dustGeo, dustMat); scene.add(motes);
   let lastBounds = "";
   function projectBounds() {
     camera.updateMatrixWorld();
-    const a = new THREE.Vector3(-1.35, 3.31, 0.06).project(camera);
-    const b = new THREE.Vector3(1.35, 0.61, 0.06).project(camera);
+    const a = new THREE.Vector3(-1.4, 3.36, 0.081).project(camera);
+    const b = new THREE.Vector3(1.4, 0.56, 0.081).project(camera);
     const w = host.clientWidth, h = host.clientHeight;
     const bounds = { left: (a.x + 1) * w / 2, top: (1 - a.y) * h / 2, width: (b.x - a.x) * w / 2, height: (a.y - b.y) * h / 2 };
     const signature = Object.values(bounds).map(Math.round).join();
@@ -255,12 +294,13 @@ void main() {
     camera.aspect = w / h; camera.updateProjectionMatrix();
     cameraDistance = Math.max(7.4, 3.75 / (2 * Math.tan(THREE.MathUtils.degToRad(21)) * camera.aspect));
     const mobile = w < 700;
-    renderer.setPixelRatio(degraded ? 0.8 : Math.min(window.devicePixelRatio, mobile || reduced ? 1 : 1.5));
+    renderer.setPixelRatio(degraded ? 0.65 : Math.min(window.devicePixelRatio, mobile ? 1 : 1.5));
     renderer.setSize(w, h);
-    const shadowSize = mobile || degraded || reduced ? 512 : 1024;
+    const shadowSize = degraded ? 512 : mobile ? 512 : 1024;
     if (spot.shadow.mapSize.x !== shadowSize) { spot.shadow.mapSize.set(shadowSize, shadowSize); spot.shadow.map?.dispose(); spot.shadow.map = null; }
     positionCamera(phase === "revealing" ? elapsed / 1650 : 1, true);
     renderer.shadowMap.needsUpdate = true;
+    if (entered) startLoop();
   }
   const observer = new ResizeObserver(resize); observer.observe(host); resize();
   // Browsers may suspend RAF while hidden; do not count that gap on resume.
@@ -274,22 +314,38 @@ void main() {
   }
   const visibilityChanged = () => { if (document.hidden) stopLoop(); else startLoop(); };
   document.addEventListener("visibilitychange", visibilityChanged);
-  function finish() { phase = "ready"; setLight(1); positionCamera(1, true); renderer.shadowMap.needsUpdate = true; hooks.onState(phase, index); }
+  function finish() { revealControls(); phase = "ready"; setLight(1); positionCamera(1, true); renderer.shadowMap.needsUpdate = true; hooks.onState(phase, index); }
+  function revealControls() {
+    if (!controlsRevealed) { controlsRevealed = true; hooks.onControlsReveal(); }
+  }
+  function cardOpacity(card: THREE.Group, opacity: number) {
+    card.traverse(object => {
+      if (object instanceof THREE.Mesh) {
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach(material => { material.opacity = opacity; });
+      }
+    });
+  }
   function frame(now: number) {
     if (disposed || !running) return;
     const dt = previous ? now - previous : 0; previous = now;
-    if (document.hidden) return;
+    if (document.hidden) { stopLoop(); return; }
     // Sequence timing follows active wall-clock time, including slower rendered frames.
     if (entered) elapsed += dt;
     if (phase === "revealing") {
       // The approved 2.1s reveal is a 1.65s dolly followed by a 450ms settle.
       positionCamera(elapsed / (reduced ? 200 : 1650));
       setLight(smooth(elapsed / (reduced ? 200 : 850)));
+      if (elapsed >= (reduced ? 0 : INTRO_MS.reveal - 200)) revealControls();
       if (elapsed >= (reduced ? 200 : INTRO_MS.reveal)) finish();
     } else if (phase === "switching") {
       if (reduced) {
-        setLight(1); cards[index].visible = false; cards[incoming].visible = true;
+        setLight(1);
+        cards[index].visible = elapsed < 100; cards[incoming].visible = elapsed >= 100;
+        cardOpacity(cards[index], 1 - smooth(elapsed / 100));
+        cardOpacity(cards[incoming], smooth((elapsed - 100) / 100));
         cards[incoming].position.x = 0;
+        renderer.shadowMap.needsUpdate = true;
       } else {
         const t = smooth((elapsed - 100) / 380);
         cards[index].position.x = -direction * t * 4.8;
@@ -307,27 +363,22 @@ void main() {
       motes.position.x = Math.sin(now * 0.000071) * 0.018;
       motes.position.y = Math.sin(now * 0.000043 + 1.7) * 0.011;
     }
-    renderer.render(scene, camera);
+    try { renderer.render(scene, camera); }
+    catch { dispose(); hooks.onFailure(); return; }
     if (entered && !degraded && ++frames > 12) {
       if (dt > 40) slowFrames++; else slowFrames = Math.max(0, slowFrames - 1);
-      if (slowFrames > 12) {
-        degraded = true;
-        // IBL is the most expensive remaining material path on software and
-        // low-end renderers. Direct practical lighting still preserves the set.
-        scene.environment = null;
-        scene.traverse(object => {
-          if (!(object instanceof THREE.Mesh)) return;
-          for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.needsUpdate = true;
-        });
-        resize();
-      }
+      if (slowFrames > 12) { degraded = true; resize(); }
     }
+    // Once dust is disabled the settled scene is static. Draw on demand,
+    // while keeping every frame of entrance and card exchanges animated.
+    if (phase === "ready" && (reduced || degraded)) stopLoop();
     if (running) raf = requestAnimationFrame(frame);
   }
   function dispose() {
     if (disposed) return;
     disposed = true; stopLoop(); observer.disconnect();
     document.removeEventListener("visibilitychange", visibilityChanged);
+    signal?.removeEventListener("abort", cancelCompiled);
     renderer.domElement.removeEventListener("webglcontextlost", lost);
     const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>();
     scene.traverse((o) => {
@@ -338,46 +389,45 @@ void main() {
     geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); allTextures.forEach(t => t.dispose());
     spot.shadow.dispose(); environmentTarget.dispose(); renderer.dispose(); renderer.domElement.remove();
   }
-  function lost(event: Event) { event.preventDefault(); dispose(); hooks.onFailure(); }
+  let compiling = true, constructionCancelled = false;
+  function cancelCompiled() {
+    constructionCancelled = true;
+    renderer.domElement.remove(); observer.disconnect(); stopLoop();
+    document.removeEventListener("visibilitychange", visibilityChanged);
+    // compileAsync polls program objects; release them only after it settles.
+    if (!compiling) dispose();
+  }
+  function lost(event: Event) { event.preventDefault(); cancelCompiled(); hooks.onFailure(); }
   renderer.domElement.addEventListener("webglcontextlost", lost);
+  signal?.addEventListener("abort", cancelCompiled, { once: true });
   // Warm programs and upload textures before allowing the camera reveal.
   // A rejected compile must release the same resources as a normal unmount.
   try {
     await renderer.compileAsync(scene, camera);
-    if (disposed) throw new Error("WebGL context lost while preparing the room");
+    compiling = false;
+    if (constructionCancelled || signal?.aborted) throw new DOMException("Room construction cancelled", "AbortError");
     renderer.render(scene, camera);
     renderer.shadowMap.autoUpdate = false;
-  } catch (error) { dispose(); throw error; }
+  } catch (error) { compiling = false; dispose(); throw error; }
   return {
     enter(initial, skip) {
-      entered = true; active = true; index = initial; elapsed = 0; frames = 0; slowFrames = 0;
-      cards.forEach((card, i) => { card.visible = i === index; card.position.x = 0; });
+      entered = true; active = true; index = initial; elapsed = 0; frames = 0; slowFrames = 0; controlsRevealed = false;
+      cards.forEach((card, i) => { card.visible = i === index; card.position.x = 0; cardOpacity(card, 1); });
       renderer.shadowMap.needsUpdate = true; startLoop();
       if (skip) finish();
-      else if (reduced) {
-        phase = "revealing"; hooks.onState(phase, index);
-        // The preloaded frame already contains the final reduced-motion pose;
-        // React's room-layer opacity transition supplies the brief fade.
-        finish();
-      }
       else { phase = "revealing"; positionCamera(0); setLight(0); hooks.onState(phase, index); }
     },
     move(d) {
       if (phase !== "ready" || !entered) return;
       direction = d; incoming = nextCard(index, direction); elapsed = 0; phase = "switching";
-      hooks.onState(phase, index);
+      cardOpacity(cards[index], 1); cardOpacity(cards[incoming], 1);
+      startLoop(); hooks.onState(phase, index);
     },
     setActive(value) { active = value; if (active) startLoop(); else stopLoop(); },
     setReducedMotion(value) {
       reduced = value;
-      renderer.shadowMap.enabled = !reduced;
-      scene.environment = reduced || degraded ? null : environmentTarget.texture;
-      motes.visible = !reduced && !degraded;
-      scene.traverse(object => {
-        if (!(object instanceof THREE.Mesh)) return;
-        for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.needsUpdate = true;
-      });
-      resize();
+      cards.forEach(card => cardOpacity(card, 1));
+      startLoop();
     },
     dispose,
   };

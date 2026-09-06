@@ -35,7 +35,7 @@ import {
   IcPaint,
   TOOL_ICON_MAP,
 } from "./icons";
-import Link from "next/link";
+import HomeLink from "@/components/HomeLink";
 
 type Point = {
   x: number;
@@ -1504,13 +1504,12 @@ export default function LabPage() {
         </div>
 
         {/* Back to home */}
-        <Link
-          href="/"
+        <HomeLink
           className="inline-flex items-center gap-2 text-sm font-medium text-[var(--muted)] transition hover:text-[var(--accent-orange)]"
         >
           <IcBack />
           Back to home
-        </Link>
+        </HomeLink>
       </div>
     </main>
   );

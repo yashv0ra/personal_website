@@ -1,0 +1,26 @@
+[
+  {
+    "name": "wrap-rapid-keyboard",
+    "passed": true
+  },
+  {
+    "name": "unavailable-storage-replay",
+    "passed": true
+  },
+  {
+    "name": "webgl-init-fallback",
+    "passed": true
+  },
+  {
+    "name": "texture-timeout-fallback",
+    "passed": true
+  },
+  {
+    "name": "reduced-motion-timing",
+    "passed": true
+  },
+  {
+    "name": "short-landscape-bounds",
+    "passed": true
+  }
+]

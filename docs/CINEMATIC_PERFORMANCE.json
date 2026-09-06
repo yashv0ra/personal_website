@@ -1,0 +1,18 @@
+{
+  "renderer": "Chromium SwiftShader software WebGL",
+  "introMs": 3952.7000000001863,
+  "frames": {
+    "phase": "settled room (may render on demand after degradation)",
+    "medianMs": 16.69999999999891,
+    "p95Ms": 216.60000000000036
+  },
+  "activeSwitch": {
+    "durationMs": 1288.300000000745,
+    "samples": 9,
+    "medianMs": 116.69999999999891,
+    "p95Ms": 166.6999999999989
+  },
+  "instrumentDraws": true,
+  "entranceDrawDelta": 0,
+  "afterBackDrawDelta": 0
+}

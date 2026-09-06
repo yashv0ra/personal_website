@@ -57,6 +57,7 @@ export default function CinematicHome({ email, links }: { email: string; links: 
     alive.current = true;
     const generation = ++lifetime.current;
     let cancelled = false;
+    const construction = new AbortController();
     let abandoned = false;
     const ownedAnimations: Animation[] = [];
     animations.current = ownedAnimations;
@@ -69,6 +70,7 @@ export default function CinematicHome({ email, links }: { email: string; links: 
     const activateFallback = () => {
       if (!valid()) return;
       abandoned = true;
+      construction.abort();
       setFallback(true);
       controller.current?.dispose(); controller.current = null;
       if (started.current) onState("ready", currentIndex.current);
@@ -78,8 +80,9 @@ export default function CinematicHome({ email, links }: { email: string; links: 
       return createRoom(host.current, {
         onState: (nextPhase, nextIndex) => { if (valid() && !abandoned) onState(nextPhase, nextIndex); },
         onBounds: b => { if (valid() && !abandoned) { setBounds(b); setViewportWidth(host.current?.clientWidth ?? window.innerWidth); } },
+        onControlsReveal: () => { if (valid() && !abandoned) setRevealed(true); },
         onFailure: activateFallback,
-      }, reduced.current);
+      }, reduced.current, construction.signal);
     }).then(room => {
       if (!valid() || abandoned) { room?.dispose(); return null; }
       controller.current = room;
@@ -104,7 +107,7 @@ export default function CinematicHome({ email, links }: { email: string; links: 
       }
     });
     return () => {
-      cancelled = true; alive.current = false; clearTimeout(timeout);
+      cancelled = true; alive.current = false; clearTimeout(timeout); construction.abort();
       media.removeEventListener("change", changed);
       ownedAnimations.forEach(a => a.cancel()); controller.current?.dispose(); controller.current = null;
     };
@@ -168,7 +171,7 @@ export default function CinematicHome({ email, links }: { email: string; links: 
       const destination = currentIndex.current === 1 ? "/resume" : "/lab";
       setLeaving(true);
       void wait(reduced.current ? 0 : 200).then(() => {
-        if (alive.current) router.push(destination);
+        if (alive.current) router.push(`${destination}?from=cinematic`);
       });
     }
   }
@@ -202,15 +205,15 @@ export default function CinematicHome({ email, links }: { email: string; links: 
         <div className={styles.grain} aria-hidden="true" />
         <div className={styles.letterbox} aria-hidden="true" />
         {stage === "room" && <button className={`${styles.back} ${revealed ? styles.backVisible : ""}`} onClick={backToEntrance} aria-label="Back to entrance" disabled={!ready || aboutOpen || leaving}><Arrow left /> <span>Back</span></button>}
-        <section aria-label="Portfolio sections" aria-roledescription="carousel" aria-busy={!ready} className={styles.controls} inert={stage !== "room" || aboutOpen || leaving || !ready} onKeyDown={e => {
+        <section aria-label="Portfolio sections" aria-roledescription="carousel" aria-busy={!ready} className={styles.controls} inert={stage !== "room" || aboutOpen || leaving} onKeyDown={e => {
           if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); move(e.key === "ArrowRight" ? 1 : -1); }
         }}>
-          <button className={`${styles.cardAction} ${fallback ? styles.fallbackCard : ""}`} style={interactiveStyle} ref={action} aria-label={`Open ${CARD_TITLES[index]}`} disabled={!ready || leaving} onClick={openCard} tabIndex={ready ? 0 : -1}>
+          <button className={`${styles.cardAction} ${fallback ? styles.fallbackCard : ""}`} style={interactiveStyle} ref={action} aria-label={`Open ${CARD_TITLES[index]}`} aria-disabled={!ready || leaving} onClick={openCard} tabIndex={ready ? 0 : -1}>
             {fallback ? <><span className={styles.fallbackEmblem} aria-hidden="true"><Emblem index={index} /></span><span>{CARD_TITLES[index]}</span></> : <span className={styles.srOnly}>{CARD_TITLES[index]}</span>}
           </button>
           <div className={`${styles.navigation} ${revealed ? styles.navigationRevealed : ""} ${ready ? styles.navigationReady : ""}`} style={bounds && !fallback ? { top: bounds.top + bounds.height / 2, left: navigationLeft, width: Math.max(0, navigationRight - navigationLeft) } : undefined}>
-            <button aria-label="Previous card" disabled={!ready} onClick={() => move(-1)} tabIndex={ready ? 0 : -1}><Arrow left /></button>
-            <button aria-label="Next card" disabled={!ready} onClick={() => move(1)} tabIndex={ready ? 0 : -1}><Arrow /></button>
+            <button aria-label="Previous card" aria-disabled={!ready} onClick={() => move(-1)} tabIndex={ready ? 0 : -1}><Arrow left /></button>
+            <button aria-label="Next card" aria-disabled={!ready} onClick={() => move(1)} tabIndex={ready ? 0 : -1}><Arrow /></button>
           </div>
           <p aria-live="polite" aria-atomic="true" className={styles.srOnly}>{ready ? `${CARD_TITLES[index]}, ${index + 1} of 3` : ""}</p>
         </section>

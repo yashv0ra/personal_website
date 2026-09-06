@@ -241,14 +241,6 @@ async function main() {
 
   if (!(await fileExists(resumeImagePath))) {
     console.warn("resume.png not found in public/. Skipping OCR sync.");
-    const updated = {
-      ...existing,
-      about: {
-        heading: ABOUT_HEADING,
-        summary: ABOUT_SUMMARY,
-      },
-    };
-    await fs.writeFile(resumeDataPath, JSON.stringify(updated, null, 2));
     return;
   }
 
