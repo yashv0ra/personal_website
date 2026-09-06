@@ -22,6 +22,7 @@ async function run(script, save) {
 }
 try {
  await serverReady; await mkdir('output/playwright',{recursive:true});
+ await run('verify-cinematic-password.mjs');
  await run('measure-cinematic-performance.mjs','output/playwright/performance.json');
  await run('verify-cinematic.mjs');
  await run('verify-cinematic-edges.mjs');

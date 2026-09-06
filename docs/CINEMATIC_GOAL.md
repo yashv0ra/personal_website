@@ -4,6 +4,8 @@ This is the project record of the user's active goal. A handoff or passing build
 
 ## Latest approved placement and publication — 2026-09-06
 
+Follow-up: the user requested a password of `1111` after clicking the X and explicitly said to push to `main`. Show a server-validated password gate before the cinematic entrance. Each fresh visit starts locked; preserve the existing landing and cinematic experience behind it.
+
 The user superseded the homepage placement and earlier branch-only restriction:
 
 > keep this all as an X icon in the top right of the normal landing page for the website. Then push it all to main and then to yashvora.net.

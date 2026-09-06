@@ -5,10 +5,10 @@ The user's latest instruction preserves the normal landing page, opens this enti
 ## Routes and integration
 
 - `/` restores the existing charcoal/orange landing page with a 44px X link to `/cinematic`. Three.js is not imported by the normal landing page.
-- `/cinematic` keeps the pure-white `click here` entrance, physical room/card carousel, About dialog and Back/replay.
-- Room destinations use `/resume?from=cinematic` and `/lab?from=cinematic`. The shared HomeLink validates that exact query value and returns to the saved room; ordinary destinations return to `/`.
+- `/cinematic` now opens a password form. The server action checks the user-selected password before returning the pure-white `click here` entrance, physical room/card carousel, About dialog and Back/replay. A fresh visit/reload starts locked. The X uses a full navigation so clicking it always starts at the gate.
+- Room destinations use `/resume?from=cinematic` and `/lab?from=cinematic`. The shared HomeLink validates that exact query value and returns through the password gate to the saved room; ordinary destinations return to `/`.
 - Three verified CC0 concrete textures are included in the repository. `scripts/download-room-assets.mjs` can verify or restore them; production no longer relies on a manual asset bootstrap.
-- The prior OpenAI migration is preserved. No credentials were read or committed, and no provider calls are made by these tests.
+- The prior OpenAI migration is preserved. No provider credentials were read or committed, and no provider calls are made by these tests.
 - The OCR prebuild now truly leaves `data/resume.json` unchanged when `public/resume.png` is absent.
 
 ## Work reconciled
@@ -27,6 +27,10 @@ The starting remote revision was `bcee7a6942bde24101b767068d0889e964ea51a5`. A s
 An independent read-only subagent reviewed interaction/lifecycle changes. No claim of live communication with the external cloud-task UUID is made; integration used visible GitHub comments and the shared repository records.
 
 ## Reproduce
+
+Password-gate follow-up: `scripts/verify-cinematic-password.mjs` tests the real server action, wrong/empty inputs, successful entry, direct visits, reload, repeat X, network retry and mobile layout. It starts a built production server automatically unless `CINEMATIC_URL` is supplied. The existing cinematic QA scripts use the same password form via `scripts/cinematic-password.mjs`; set `CINEMATIC_PASSWORD` if the configured password changes. New gate results are in `CINEMATIC_PASSWORD_VALIDATION.json`. Earlier visual/performance JSON files remain evidence from the preceding cinematic release.
+
+The gate is an entry restriction for this public portfolio experience, not an account system: it creates no persistent login session and does not make static assets or public Resume/Lab pages private. Only submitted form data is checked; query parameters and browser storage never authorize entry.
 
 ```sh
 npm ci

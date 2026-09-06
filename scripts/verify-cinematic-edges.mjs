@@ -1,3 +1,4 @@
+import { unlockCinematic } from './cinematic-password.mjs';
 // Browser regressions for cancellation, storage, reverse navigation and input.
 // Runs against a built site; does not call provider APIs.
 import { chromium } from 'playwright';
@@ -14,7 +15,7 @@ async function run(name, setup, check, options={}) {
   const page=await context.newPage(); page.setDefaultTimeout(20000);
   page.on('pageerror',e=>errors.push(e.message));
   try {
-    await setup(context,page); await page.goto(`${base}/cinematic`); await check(page,context);
+    await setup(context,page); await page.goto(`${base}/cinematic`); await unlockCinematic(page); await check(page,context);
     assert.deepEqual(errors,[]); results.push({name,passed:true,errors});
   } catch(error) { results.push({name,passed:false,error:String(error),errors}); throw error; }
   finally {await context.close();}
@@ -29,7 +30,7 @@ try {
     const link=page.getByRole('link',{name:'Enter cinematic experience',exact:true});
     const box=await link.boundingBox();assert.ok(box && box.width>=44 && box.height>=44 && box.x>1300 && box.y<60);
     await page.screenshot({path:`${out}/normal-landing.png`});
-    await link.click();await page.waitForURL('**/cinematic');
+    await link.click();await page.waitForURL('**/cinematic');await unlockCinematic(page);
     assert.equal(await page.getByRole('button',{name:'click here',exact:true}).count(),1);
     await page.goto(`${base}/resume`);await page.getByRole('link',{name:'Home',exact:true}).click();await page.waitForURL(base+'/');
     await page.goto(`${base}/lab`);await page.getByRole('link',{name:'Back to home',exact:true}).click();await page.waitForURL(base+'/');
@@ -44,7 +45,7 @@ try {
     await page.getByRole('button',{name:'Open Resume',exact:true}).press('ArrowLeft');await ready(page);assert.equal(await card(page),'About');
     await page.getByRole('button',{name:'Next card',exact:true}).evaluate(button=>{for(let i=0;i<12;i++) button.click();});
     await ready(page);assert.equal(await card(page),'Resume');
-    await page.reload();await ready(page);assert.equal(await card(page),'Resume');assert.equal(await page.locator('canvas').count(),1);
+    await page.reload();await unlockCinematic(page);await ready(page);assert.equal(await card(page),'Resume');assert.equal(await page.locator('canvas').count(),1);
     await page.getByRole('button',{name:'Previous card',exact:true}).press('Enter');await ready(page);
     await page.getByRole('button',{name:'Open About',exact:true}).press('Enter');await page.getByRole('dialog').waitFor();
     await page.keyboard.press('Escape');await page.getByRole('dialog').waitFor({state:'hidden'});
@@ -69,7 +70,7 @@ try {
     await page.goto(`${base}/resume?from=cinematic`);
     await page.waitForTimeout(3000);
     assert.equal(await page.locator('canvas').count(),0);
-    await page.getByRole('link',{name:'Home',exact:true}).click();await enter(page);assert.equal(await page.locator('canvas').count(),1);
+    await page.getByRole('link',{name:'Home',exact:true}).click();await unlockCinematic(page);await enter(page);assert.equal(await page.locator('canvas').count(),1);
   });
   await run('reduced-motion-landscape-replay',async()=>{},async page=>{
     await enter(page);await page.getByRole('button',{name:'Previous card',exact:true}).click();await ready(page);assert.equal(await card(page),'Lab');

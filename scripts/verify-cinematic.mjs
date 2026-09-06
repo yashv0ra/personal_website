@@ -1,3 +1,4 @@
+import { unlockCinematic } from './cinematic-password.mjs';
 // Real-browser checkpoint verification. No provider mocks; this does not call AI APIs.
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
@@ -23,7 +24,7 @@ async function session(name, options = {}) {
   const warnings = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', message => { if (message.type() === 'warning' || message.type() === 'error') warnings.push(message.text()); });
-  await page.goto(`${base}/cinematic`);
+  await page.goto(`${base}/cinematic`); await unlockCinematic(page);
   const result = { context, page, errors, warnings, name };
   sessions.push(result);
   return result;
@@ -68,14 +69,14 @@ try {
   await shot(page, '06-resume-card');
   await page.getByRole('button', { name: 'Open Resume', exact: true }).click();
   await page.waitForURL('**/resume?from=cinematic');
-  await page.getByRole('link', { name: 'Home', exact: true }).click(); await ready(page);
+  await page.getByRole('link', { name: 'Home', exact: true }).click(); await unlockCinematic(page); await ready(page);
   assert.equal(await page.locator('main').getAttribute('data-card'), 'Resume');
   assert.equal(await page.getByRole('button', { name: 'click here', exact: true }).count(), 0);
   await page.getByRole('button', { name: 'Next card', exact: true }).click(); await ready(page);
   await page.getByRole('button', { name: 'Open Lab', exact: true }).click(); await page.waitForURL('**/lab?from=cinematic');
   assert.equal(await page.locator('a[href="https://purduebarlines.web.app"]').count(), 1);
   assert.equal(await page.getByRole('button').filter({ hasText: 'Paint + Charades' }).count(), 1);
-  await page.getByRole('link', { name: 'Back to home' }).click(); await ready(page);
+  await page.getByRole('link', { name: 'Back to home' }).click(); await unlockCinematic(page); await ready(page);
   await page.getByRole('button', { name: 'Next card', exact: true }).click(); await ready(page);
   await page.getByRole('button', { name: 'Open About', exact: true }).click();
   await page.getByRole('dialog').waitFor(); await shot(page, '07-about-dialog');

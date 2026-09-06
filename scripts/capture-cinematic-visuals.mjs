@@ -1,3 +1,4 @@
+import { unlockCinematic } from './cinematic-password.mjs';
 // Focused visual evidence capture. This never calls application AI routes.
 import { chromium } from "playwright";
 import { mkdir, rm, writeFile } from "node:fs/promises";
@@ -33,7 +34,7 @@ const shot = async name => {
 };
 
 try {
-  await page.goto(`${base}/cinematic`);
+  await page.goto(`${base}/cinematic`); await unlockCinematic(page);
   await shot("01-entrance");
   await page.getByRole("button", { name: "click here", exact: true }).click();
   await page.waitForTimeout(650); await shot("02-expansion-sample");

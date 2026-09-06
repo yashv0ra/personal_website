@@ -1,3 +1,4 @@
+import { unlockCinematic } from './cinematic-password.mjs';
 // Measures real browser timing and verifies that WebGL draw calls stop while
 // the white entrance is covering the room. This does not call AI routes.
 import { chromium } from "playwright";
@@ -28,7 +29,7 @@ await context.addInitScript(({ instrumentDraws }) => {
 }, { instrumentDraws });
 const page = await context.newPage();
 page.setDefaultTimeout(60000);
-await page.goto(`${process.env.CINEMATIC_URL || "http://127.0.0.1:3011"}/cinematic`);
+await page.goto(`${process.env.CINEMATIC_URL || "http://127.0.0.1:3011"}/cinematic`); await unlockCinematic(page);
 await page.locator('main[data-scene-ready="true"]').waitFor();
 await page.waitForTimeout(250);
 const entranceDrawsA = await page.evaluate(() => window.__cinematicDraws);

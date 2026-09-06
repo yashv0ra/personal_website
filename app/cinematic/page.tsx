@@ -1,6 +1,6 @@
-import CinematicHome from "@/components/cinematic/CinematicHome";
-import { resume } from "@/lib/resume";
+import CinematicGate from "@/components/cinematic/CinematicGate";
+import { unlockCinematic } from "./actions";
 
 export default function CinematicPage() {
-  return <CinematicHome email={resume.basics.email} links={resume.basics.links} />;
+  return <CinematicGate unlock={unlockCinematic} />;
 }

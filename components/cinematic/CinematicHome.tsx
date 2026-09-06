@@ -219,7 +219,7 @@ export default function CinematicHome({ email, links }: { email: string; links: 
         </section>
       </div>
       {stage !== "room" && <div ref={entrance} className={styles.entrance}>
-        <button ref={entryButton} className={styles.enterButton} onClick={enter} aria-disabled={stage === "transition"}>click here</button>
+        <button ref={entryButton} autoFocus className={styles.enterButton} onClick={enter} aria-disabled={stage === "transition"}>click here</button>
       </div>}
       <dialog ref={dialog} className={styles.about} data-closing={aboutClosing} aria-labelledby="about-title" onCancel={e => { e.preventDefault(); closeAbout(); }} onClose={() => { dismissingAbout.current = false; focusOnReady.current = true; setAboutClosing(false); setAboutOpen(false); }} onClick={e => { if (e.target === dialog.current) closeAbout(); }}>
         <div className={styles.aboutContent}>
