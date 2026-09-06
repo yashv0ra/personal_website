@@ -48,12 +48,12 @@ This repository contains a **Next.js personal website** that highlights Yash’s
 ### `POST /api/chat`
 - Uses the incoming conversation history.
 - Prepends system instructions and a generated resume context (`buildResumeContext`).
-- Calls Groq’s OpenAI-compatible chat completion endpoint.
+- Calls OpenAI’s Responses API.
 - Enforces concise, resume-grounded responses with anti-fabrication guidance and query grounding rules.
 
 ### `POST /api/lab/vision-guess`
 - Accepts a PNG data URL from the drawing canvas.
-- Calls Gemini Vision (`generateContent`) with a charades-style prompt.
+- Calls OpenAI’s Responses API with image input with a charades-style prompt.
 - Returns:
   - model name
   - formatted guess text
@@ -80,8 +80,7 @@ This repository contains a **Next.js personal website** that highlights Yash’s
 - React 19
 - TypeScript
 - Tailwind CSS 4
-- Groq API (resume chat)
-- Google Gemini Vision API (lab guessing)
+- OpenAI Responses API (resume chat and lab guessing)
 - Tesseract.js (optional resume OCR sync)
 
 ## Environment Variables
@@ -89,18 +88,18 @@ This repository contains a **Next.js personal website** that highlights Yash’s
 Create `.env.local`:
 
 ```bash
-GROQ_API_KEY=your_groq_api_key
-GEMINI_API_KEY=your_gemini_api_key
+# Set OPENAI_API_KEY securely in .env.local
 # Optional
-# GROQ_MODEL=llama-3.1-8b-instant
-# VISION_MODEL=gemini-2.5-flash-lite
+# OPENAI_CHAT_MODEL=gpt-4.1-mini
+# OPENAI_VISION_MODEL=gpt-4.1-mini
 # VISION_GUESS_DAILY_LIMIT=30
 # VISION_GUESS_MIN_INTERVAL_MS=10000
 ```
 
 Notes:
-- `GROQ_API_KEY` is required for `POST /api/chat`.
-- `GEMINI_API_KEY` is required for `POST /api/lab/vision-guess`.
+- `OPENAI_API_KEY` is required for both API routes; keep it server-side.
+- Both routes default to `gpt-4.1-mini` and use `store: false`.
+- Configure the same variables in the deployment environment before publishing.
 - `VISION_GUESS_DAILY_LIMIT` controls local per-client daily guess quota.
 - `VISION_GUESS_MIN_INTERVAL_MS` controls local cooldown between guesses.
 

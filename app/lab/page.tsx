@@ -35,7 +35,7 @@ import {
   IcPaint,
   TOOL_ICON_MAP,
 } from "./icons";
-import Link from "next/link";
+import HomeLink from "@/components/HomeLink";
 
 type Point = {
   x: number;
@@ -1448,6 +1448,19 @@ export default function LabPage() {
 
         {/* Project cards */}
         <div className="grid gap-5">
+          <a
+            href="https://purduebarlines.web.app"
+            target="_blank"
+            rel="noreferrer"
+            className="lift group flex items-center justify-between gap-6 rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-left"
+          >
+            <div>
+              <h2 className="font-display text-2xl font-semibold sm:text-3xl">Purdue Bar Lines</h2>
+              <p className="mt-3 text-sm text-[var(--muted)]">Bar wait times around campus.</p>
+            </div>
+            <span aria-hidden="true" className="text-2xl text-[var(--accent-orange)]">↗</span>
+            <span className="sr-only">Opens in a new tab</span>
+          </a>
           {LAB_OPTIONS.map((project) => (
             <button
               key={project.id}
@@ -1491,13 +1504,12 @@ export default function LabPage() {
         </div>
 
         {/* Back to home */}
-        <Link
-          href="/"
+        <HomeLink
           className="inline-flex items-center gap-2 text-sm font-medium text-[var(--muted)] transition hover:text-[var(--accent-orange)]"
         >
           <IcBack />
           Back to home
-        </Link>
+        </HomeLink>
       </div>
     </main>
   );

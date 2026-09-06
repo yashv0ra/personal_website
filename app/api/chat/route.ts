@@ -1,3 +1,4 @@
+import { extractResponseText, type OpenAIResponse } from "@/lib/openai";
 import { NextResponse } from "next/server";
 import { buildResumeContext, resume } from "@/lib/resume";
 
@@ -90,7 +91,7 @@ type UserChatMessage = {
   content: string;
 };
 
-type GroqErrorPayload = {
+type OpenAIErrorPayload = {
   error?: {
     message?: string;
     type?: string;
@@ -317,7 +318,7 @@ function isRateLimitPayload(payload: unknown): boolean {
     return false;
   }
 
-  const error = (payload as GroqErrorPayload).error;
+  const error = (payload as OpenAIErrorPayload).error;
   if (!error) {
     return false;
   }
@@ -430,10 +431,10 @@ function enforceSentenceBounds(text: string): string {
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { message: "Missing GROQ_API_KEY on the server." },
+      { message: "Missing OPENAI_API_KEY on the server." },
       { status: 500 }
     );
   }
@@ -471,20 +472,23 @@ export async function POST(request: Request) {
   }
 
   const payload = {
-    model: process.env.GROQ_MODEL ?? "llama-3.1-8b-instant",
+    model: process.env.OPENAI_CHAT_MODEL ?? "gpt-4.1-mini",
     temperature: 0,
-    messages: [...systemMessages, ...userMessages],
+    input: [...systemMessages, ...userMessages],
+    store: false,
+    max_output_tokens: 400,
   };
 
   let response: Response;
   try {
-    response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30_000),
     });
   } catch {
     return NextResponse.json(
@@ -508,24 +512,24 @@ export async function POST(request: Request) {
       );
     }
 
-    const errorText = rawErrorText.slice(0, 400).trim();
+
     return NextResponse.json(
       {
         message:
-          errorText ||
-          `LLM provider request failed with status ${response.status}.`,
+          `OpenAI request failed with status ${response.status}.`,
       },
       { status: 502 }
     );
   }
 
-  const data = (await response.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
+  const data = (await response.json()) as OpenAIResponse;
   if (isRateLimitPayload(data)) {
     return NextResponse.json({ message: rateLimitMessage }, { status: 429 });
   }
-  const reply = data.choices?.[0]?.message?.content?.trim();
+  const reply = extractResponseText(data);
+  if (!reply) {
+    return NextResponse.json({ message: "The model returned no complete reply. Please try again." }, { status: 502 });
+  }
   let sanitizedReply = sanitizeReply(reply ?? "");
   sanitizedReply = removeNoInfoClause(sanitizedReply);
   sanitizedReply = dropContradictoryNoInfoLead(sanitizedReply);

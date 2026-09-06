@@ -1,3 +1,4 @@
+import { extractResponseText, type OpenAIResponse } from "@/lib/openai";
 import { NextResponse } from "next/server";
 
 type VisionRateState = {
@@ -10,7 +11,7 @@ type VisionRateStateWithCooldown = VisionRateState & {
   cooldownMs: number | null;
 };
 
-const DEFAULT_VISION_MODEL = "gemini-2.5-flash-lite";
+const DEFAULT_VISION_MODEL = "gpt-4.1-mini";
 const DEFAULT_DAILY_GUESS_LIMIT = 30;
 const DEFAULT_GUESS_COOLDOWN_MS = 10_000;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -170,15 +171,6 @@ function localLimitBlocked(
   };
 }
 
-function sanitizeImageData(imageDataUrl: string): string {
-  const parts = imageDataUrl.split(",");
-  const base64 = parts[1];
-  if (!base64) {
-    throw new Error("Image data is invalid");
-  }
-  return base64;
-}
-
 function parseIntHeader(value: string | null): number | null {
   if (!value) {
     return null;
@@ -227,23 +219,6 @@ function parseRateLimitInfo(headers: Headers): VisionRateState {
   };
 }
 
-function extractGuessFromResponse(
-  payload: { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> },
-): string {
-  const firstCandidate = payload.candidates?.[0];
-  const firstPart = firstCandidate?.content?.parts?.[0];
-  return firstPart?.text?.trim() ?? "";
-}
-
-function extractUsage(
-  payload: { usageMetadata?: { promptTokenCount?: number; totalTokenCount?: number } },
-): VisionUsage {
-  return {
-    promptTokens: payload.usageMetadata?.promptTokenCount ?? null,
-    totalTokens: payload.usageMetadata?.totalTokenCount ?? null,
-  };
-}
-
 export async function POST(request: Request) {
   const requestNow = Date.now();
   const guard = localLimitBlocked(request, requestNow);
@@ -251,10 +226,10 @@ export async function POST(request: Request) {
     return NextResponse.json(guard.response, { status: 429 });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { message: "Missing GEMINI_API_KEY on the server." },
+      { message: "Missing OPENAI_API_KEY on the server." },
       { status: 500 }
     );
   }
@@ -268,44 +243,28 @@ export async function POST(request: Request) {
     );
   }
 
-  let base64Data: string;
-  try {
-    base64Data = sanitizeImageData(imageDataUrl);
-  } catch {
-    return NextResponse.json(
-      { message: "Image payload format is invalid." },
-      { status: 400 }
-    );
+  if (!/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(imageDataUrl)) {
+    return NextResponse.json({ message: "Image payload must be a base64 PNG." }, { status: 400 });
   }
-
-  const model = process.env.VISION_MODEL ?? DEFAULT_VISION_MODEL;
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const model = process.env.OPENAI_VISION_MODEL ?? DEFAULT_VISION_MODEL;
+  const endpoint = "https://api.openai.com/v1/responses";
 
   const prompt =
     "You are a game judge for a charades-style sketch game. " +
     "Look at the drawing and return one concise guess of what is most likely being drawn. " +
     "Include a short confidence score as a percentage in the same line, formatted like: 'Guess: <item> (Confidence: <percent>%)'.";
   const providerPayload = {
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text: prompt,
-          },
-          {
-            inlineData: {
-              mimeType: "image/png",
-              data: base64Data,
-            },
-          },
-        ],
-      },
-    ],
-    generationConfig: {
-      temperature: 0.35,
-      maxOutputTokens: 80,
-    },
+    model,
+    store: false,
+    input: [{
+      role: "user",
+      content: [
+        { type: "input_text", text: prompt },
+        { type: "input_image", image_url: imageDataUrl, detail: "auto" },
+      ],
+    }],
+    temperature: 0.35,
+    max_output_tokens: 100,
   };
 
   let response: Response;
@@ -314,8 +273,10 @@ export async function POST(request: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(providerPayload),
+      signal: AbortSignal.timeout(30_000),
     });
   } catch {
     const localRateLimit = makeLocalRateLimit(guard.usageState, guard.limit, guard.cooldownMs, Date.now());
@@ -354,7 +315,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message: rawText.slice(0, 400) || "Vision provider request failed.",
+        message: `OpenAI vision request failed with status ${response.status}.`,
         rateLimit: rateLimitInfo,
         localRateLimit: makeLocalRateLimit(guard.usageState, guard.limit, guard.cooldownMs, Date.now()),
       },
@@ -362,8 +323,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const payload = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; usageMetadata?: { promptTokenCount?: number; totalTokenCount?: number }; };
-  const guess = extractGuessFromResponse(payload);
+  const payload = (await response.json()) as OpenAIResponse;
+  const guess = extractResponseText(payload);
   if (!guess) {
     return NextResponse.json(
       {
@@ -375,7 +336,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const usage = extractUsage(payload);
+  const usage: VisionUsage = {
+    promptTokens: payload.usage?.input_tokens ?? null,
+    totalTokens: payload.usage?.total_tokens ?? null,
+  };
   recordSuccessfulGuess(guard.usageState, Date.now());
   const localRateLimit = makeLocalRateLimit(guard.usageState, guard.limit, guard.cooldownMs, Date.now());
   return NextResponse.json<VisionResponse>({
