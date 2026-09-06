@@ -10,7 +10,11 @@ const browserTimeout = Number(process.env.CINEMATIC_BROWSER_TIMEOUT_MS || 60000)
 await mkdir(out, { recursive: true });
 const results = [];
 const sessions = [];
-const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: process.env.CHROMIUM_PATH || undefined,
+  args: ['--enable-unsafe-swiftshader'],
+});
 async function session(name, options = {}) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...options });
   const page = await context.newPage();

@@ -141,3 +141,51 @@ Verified remote checkpoint: `codex/cinematic-room-handoff` at `c49c18284ae87047c
 | Timing/performance limits | Passive observer: entry 15,599.2 ms; switch 1,133.1 ms. SwiftShader+recording, 120 RAF intervals: median 91.6 ms/p95 100 ms (~10–11 fps). The 60 s test deadline verifies eventual function; it is not the 3.45 s intro target or hardware-performance approval. |
 
 No production deployment has occurred, and the active goal remains incomplete. Continue the three priority refinements above, inspect the actual video, verify intended timing and fluidity on hardware acceleration, close reverse/rapid-input/load-timeout/storage-failure/cleanup gaps, and update every matrix row after subsequent changes. The functional suite and video artifact are real evidence; they do not prove final movie-quality motion, the timing/performance goal, every edge case, or cloud checkout/goal replication.
+
+## Cloud execution continuation — 2026-09-06 UTC
+
+This section supersedes older status statements above where they conflict. Cloud execution started from the verified remote revision `bcee7a6942bde24101b767068d0889e964ea51a5`. This runtime exposes subagents but no `get_goal`/`create_goal` tool, so the verbatim objective remains active through [CINEMATIC_GOAL.md](CINEMATIC_GOAL.md) and was copied into every delegated prompt. Five read-only subagents audited professional cinematography/Three.js guidance, interaction semantics, renderer performance/cleanup, the Playwright harness, and retained content/routes. The Sites workflow kept checkout edits with the root agent.
+
+### Implemented after `bcee7a6`
+
+- The renderer no longer runs continuously behind the white entrance or after room Back. It starts on entry, stops on Back/hidden documents, resumes safely, and remains disposable after context loss.
+- Static shadow maps no longer update every frame. Card movement explicitly dirties them, and sustained slow rendering now lowers DPR/shadow resolution, removes dust and the expensive reflection environment, while preserving the practical light and navigation.
+- Projected card bounds are reported only at settle/resize rather than through React on every dolly frame.
+- The approved reveal is now an actual 1,650 ms camera dolly plus a 450 ms settled pose rather than spreading camera motion across the full 2,100 ms.
+- Rough metal gains a restrained local PMREM reflection environment on capable renderers. The beam shader now participates in tone mapping/output color conversion. Dust uses slight nonuniform drift rather than rotating as a field.
+- The card has a deeper rounded metal frame, larger fasteners, unique wear per card, and a visible ceiling rail/carriages that make the suspension plausible during translation.
+- The bulb is now transmissive glass with a separately dimmed filament/support structure. A low warm floor bounce softens the former dead polygonal floor wedge without raising the global room tone.
+- Switching controls are natively disabled and the carousel is inert during motion. Reduced motion uses the already preloaded final pose and a brief room-layer fade, starts on a lower-cost renderer tier, and retains the same destinations.
+- `data-scene-ready` is exposed as nonvisual runtime telemetry so animation timing can be separated from renderer initialization.
+
+### Current production-browser evidence
+
+`scripts/capture-cinematic-visuals.mjs`, `scripts/measure-cinematic-performance.mjs`, and `scripts/verify-cinematic-extended.mjs` were added. They use real Playwright/Chromium, make no AI calls, and accept `CHROMIUM_PATH` for constrained runtimes. The existing verifier received the same optional executable-path support.
+
+| Evidence | Result and limit |
+| --- | --- |
+| `docs/CINEMATIC_EXTENDED_VALIDATION.json` | One frozen-production run passed reverse wrap, rapid-input guard, keyboard navigation/live announcement, unavailable-storage replay, WebGL-init fallback/replay, delayed-texture 5 s timeout with late-canvas cleanup, preloaded reduced-motion timing, and 844×390 control bounds. |
+| Draw-call instrumentation | WebGL draw delta was exactly `0` across 750 ms on the untouched white entrance and exactly `0` after Back. This closes hidden-room rendering; it does not replace heap/resource profiling. |
+| Software-renderer timing without recording | Rich desktop path observed 4,417.6–4,519.9 ms entry before/while adapting. The measured software renderer remained pathological (350 ms median RAF, 983.4 ms p95 after adaptation in one run). This improves the earlier 15.6 s recorded result but still does **not** prove the 3.45 s target on suitable hardware. |
+| Final desktop visual capture | `output/playwright/visual-review/desktop-entry-switch.webm` was opened through extracted frame sheets and inspected. It shows a true distant-to-final dolly, full lamp, physical card exchange, near-black hold, and restrained ignition. Current stills confirm the deeper card edge, amber bulb, and floor reflection. |
+| Final portrait capture | `output/playwright/visual-review-390x844/04-room-about-ready.png` and `06-room-resume-ready.png` were viewed. Full cable/lamp/card and both 44 px arrows remain in bounds; the warm floor reflection is visible. This is desktop Chromium viewport emulation, not phone-GPU proof. |
+| Browser messages | The focused capture had no application page errors. Warnings were limited to unavailable `KHR_parallel_shader_compile` and expected SwiftShader `ReadPixels` stalls caused by screenshots/recording. |
+| Parent comprehensive suite on `bcee7a6` | Remains the latest complete Resume/Lab/About/context-loss route suite and passed with zero application errors. The cloud rerun on later scene code was interrupted by a fatal font-manager defect in the serverless Chromium package when it reached text-heavy routes; the independent extended suite passed. Do not misreport that environment crash as an application pass or failure. |
+
+The cloud Chromium package could render the Three.js scene and accessible DOM, but its font subsystem did not paint page/canvas text reliably and eventually terminated on text-heavy routes. Therefore the new screenshots are valid evidence for geometry, light, material, framing, and motion, but **not** final typography/card-title evidence. Regenerate the same scripts with standard Playwright Chromium before artistic sign-off.
+
+### Additional primary sources and applied interpretation
+
+| Source | Applied decision |
+| --- | --- |
+| [ASC: Halloween Horrors — visual cues](https://theasc.com/article/shot-craft-halloween-horrors-creating-visual-cues-to-foster-fright/) | Keep a low cool room tone and selective separation rather than lifting all shadows. |
+| [ASC: The Thing](https://theasc.com/article/flashback-the-thing/) | Let the visible shade motivate a controlled warm pool surrounded by darkness. |
+| [ASC: Se7en — Khondji/Fincher](https://theasc.com/article/seven-cinematography-khondji-fincher/) | Use warm practical/cool shadow contrast and only enough haze to reveal the beam. |
+| [ASC: Blade Runner 2049 — Deakins](https://theasc.com/article/uncanny-valley-blade-runner-2049/) | Break severe concrete with light/shadow variation while retaining pools of darkness. |
+| [Three.js RoomEnvironment](https://threejs.org/docs/pages/RoomEnvironment.html), [PMREMGenerator](https://threejs.org/docs/pages/PMREMGenerator.html) | Supply restrained image-based reflections for high-metalness materials, then remove that cost on the degraded tier. |
+| [Three.js color management](https://threejs.org/manual/en/color-management.html) | Add tone/output color chunks to the custom beam shader and keep only color maps in sRGB. |
+| [Emil Kowalski animation review](https://github.com/emilkowalski/skills/blob/main/skills/review-animations/SKILL.md) | Preserve purposeful ease-in-out motion, deterministic input locks, frame-by-frame review, and reduced-motion fades without movement. The user's explicit cinematic timings override generic short-UI timing advice. |
+
+### Remaining completion limits
+
+The active goal is still not complete. Before marking it complete, rerun both browser suites with standard Playwright Chromium on hardware-accelerated desktop, confirm the 3.45 s entry and smooth frame pacing without recording overhead, inspect painted card titles/typography, verify final full route/context-loss behavior after these scene changes, and perform a real mobile-GPU check. The current material/framing pass is substantially improved and has been inspected, but “movie-level realism” remains an artistic target rather than a proven test result. No deployment or merge to `main` has occurred.

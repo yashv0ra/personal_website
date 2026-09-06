@@ -1,11 +1,13 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { CARD_TITLES, INTRO_MS, SWITCH_MS, smooth, switchLight, nextCard, type CardIndex, type RoomPhase } from "./sequence";
 
 export type CardBounds = { left: number; top: number; width: number; height: number };
 export type RoomController = {
   enter: (index: CardIndex, skip: boolean) => void;
   move: (direction: number) => void;
+  setActive: (active: boolean) => void;
   setReducedMotion: (reduced: boolean) => void;
   dispose: () => void;
 };
@@ -23,7 +25,7 @@ function cardTexture(index: CardIndex): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = 1024;
   const ctx = canvas.getContext("2d")!;
-  const rand = seeded(95);
+  const rand = seeded(95 + index * 7919);
   ctx.fillStyle = "#827f70";
   ctx.fillRect(0, 0, 1024, 1024);
   // Uneven enamel, fine pitting and scuffs are physical detail, not a UI overlay.
@@ -69,20 +71,30 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#080b0b");
   scene.fog = new THREE.FogExp2("#080b0b", 0.026);
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({ antialias: !initialReduced, powerPreference: "high-performance" });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !initialReduced;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.domElement.setAttribute("aria-hidden", "true");
   host.appendChild(renderer.domElement);
-  let disposed = false, reduced = initialReduced, entered = false;
+  let disposed = false, reduced = initialReduced, entered = false, active = false, running = false;
   let index: CardIndex = 0, incoming: CardIndex = 1, direction = 1;
   let phase: RoomPhase = "ready", elapsed = 0, previous = 0, raf = 0;
   let cameraDistance = 7, frames = 0, slowFrames = 0, degraded = false;
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 35);
   const target = new THREE.Vector3(0, 2.35, 0);
+  // A dim, neutral reflection field lets rough metal read as metal without
+  // behaving like another visible light source in the room.
+  const environment = new RoomEnvironment();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const environmentTarget = pmrem.fromScene(environment, 0.04);
+  scene.environment = environmentTarget.texture;
+  scene.environmentIntensity = 0.11;
+  if (initialReduced) scene.environment = null;
+  environment.dispose();
+  pmrem.dispose();
   const allTextures = new Set<THREE.Texture>();
   const loader = new THREE.TextureLoader();
   const maps = await Promise.allSettled([
@@ -139,8 +151,15 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
   mesh(new THREE.TorusGeometry(0.481, 0.012, 8, 64), agedMetal, 0, 0.007, 0, lamp).rotation.x = Math.PI / 2;
   const reflector = mesh(new THREE.ConeGeometry(0.455, 0.29, 48, 1, true), new THREE.MeshStandardMaterial({ color: "#b6b0a0", metalness: 0.4, roughness: 0.4, side: THREE.BackSide }), 0, 0.13, 0, lamp);
   reflector.castShadow = false;
-  const bulbMat = new THREE.MeshStandardMaterial({ color: "#edd5aa", emissive: "#ffc982", emissiveIntensity: 1.3, roughness: 0.24 });
+  const bulbMat = new THREE.MeshPhysicalMaterial({ color: "#d7b785", emissive: "#6f3a15", emissiveIntensity: 0.32, roughness: 0.16, transmission: 0.42, thickness: 0.055, ior: 1.45, transparent: true, opacity: 0.74 });
   const bulb = mesh(new THREE.SphereGeometry(0.072, 20, 16), bulbMat, 0, 0.025, 0, lamp); bulb.castShadow = false; bulb.scale.set(0.82, 1.28, 0.82);
+  const filamentMat = new THREE.MeshStandardMaterial({ color: "#9c7145", emissive: "#ffd39a", emissiveIntensity: 2.4, roughness: 0.5 });
+  const filament = mesh(new THREE.TorusGeometry(0.021, 0.0024, 5, 18, Math.PI * 1.45), filamentMat, 0, 0.018, 0.005, lamp);
+  filament.rotation.set(Math.PI / 2, 0, -0.23); filament.castShadow = false;
+  for (const x of [-0.016, 0.016]) {
+    const support = mesh(new THREE.CylinderGeometry(0.0012, 0.0012, 0.057, 5), agedMetal, x, 0.057, 0, lamp);
+    support.castShadow = false;
+  }
   mesh(new THREE.CylinderGeometry(0.042, 0.036, 0.055, 16), agedMetal, 0, 0.13, 0, lamp);
   const glowCanvas = document.createElement("canvas"); glowCanvas.width = glowCanvas.height = 128;
   const glowContext = glowCanvas.getContext("2d")!;
@@ -157,13 +176,26 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
   const fill = new THREE.HemisphereLight("#738b92", "#222014", 0.28); scene.add(fill);
   // Local reflected light makes the metal housing legible; follows the same ignition.
   const bounce = new THREE.PointLight("#ddcfac", 4.0, 3); bounce.position.set(0.3, 4.7, 1.75); scene.add(bounce);
+  // Warm spill returning from the floor lifts the card's large cast shadow
+  // without flattening the surrounding cool room tone.
+  const floorBounce = new THREE.PointLight("#b98b57", 2.2, 4.2, 2); floorBounce.position.set(0, 0.32, 1.45); scene.add(floorBounce);
   const roomFill = new THREE.PointLight("#718c96", 22, 13, 2); roomFill.position.set(-4, 3, 3.5); scene.add(roomFill);
 
   const beamMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
     uniforms: { strength: { value: 1 } },
     vertexShader: `varying vec2 vUv; varying vec3 vNormal; varying vec3 vView; void main(){vUv=uv; vec4 mv=modelViewMatrix*vec4(position,1.); vNormal=normalize(normalMatrix*normal);vView=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`,
-    fragmentShader: `uniform float strength;varying vec2 vUv;varying vec3 vNormal;varying vec3 vView;void main(){float edge=pow(abs(dot(normalize(vNormal),normalize(vView))),2.);float lengthFade=pow(vUv.y,1.7)*(1.-smoothstep(.85,1.,vUv.y));gl_FragColor=vec4(.78,.70,.50,edge*lengthFade*.024*strength);}`,
+    fragmentShader: `uniform float strength;
+varying vec2 vUv;
+varying vec3 vNormal;
+varying vec3 vView;
+void main() {
+  float edge = pow(abs(dot(normalize(vNormal), normalize(vView))), 2.);
+  float lengthFade = pow(vUv.y, 1.7) * (1. - smoothstep(.85, 1., vUv.y));
+  gl_FragColor = vec4(.78, .70, .50, edge * lengthFade * .024 * strength);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`,
   });
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 2.9, 5.2, 64, 1, true), beamMat);
   const beamDirection = spot.target.position.clone().sub(spot.position).normalize();
@@ -172,16 +204,22 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
   scene.add(beam);
 
   const cards: THREE.Group[] = [];
+  // The cards travel on a ceiling rail; moving carriages keep the suspension
+  // physically plausible during an exchange instead of sliding through concrete.
+  mesh(new THREE.BoxGeometry(10.1, 0.055, 0.075), darkMetal, 0, 6.36, -0.01);
   for (let i = 0; i < 3; i++) {
     const group = new THREE.Group(); group.position.set(0, 1.96, 0); group.visible = i === 0; scene.add(group); cards.push(group);
-    mesh(new RoundedBoxGeometry(2.7, 2.7, 0.09, 2, 0.024), agedMetal, 0, 0, 0, group);
+    mesh(new RoundedBoxGeometry(2.8, 2.8, 0.15, 4, 0.045), agedMetal, 0, 0, 0, group);
     const texture = cardTexture(i as CardIndex); allTextures.add(texture);
-    mesh(new THREE.PlaneGeometry(2.64, 2.64), new THREE.MeshStandardMaterial({ map: texture, metalness: 0.14, roughness: 0.71 }), 0, 0, 0.051, group);
-    for (const x of [-1.23, 1.23]) for (const y of [-1.23, 1.23]) {
-      mesh(new THREE.SphereGeometry(0.019, 12, 8), agedMetal, x, y, 0.058, group).scale.z = 0.35;
+    mesh(new THREE.PlaneGeometry(2.62, 2.62), new THREE.MeshStandardMaterial({ map: texture, metalness: 0.1, roughness: 0.66 }), 0, 0, 0.081, group);
+    for (const x of [-1.22, 1.22]) for (const y of [-1.22, 1.22]) {
+      mesh(new THREE.SphereGeometry(0.025, 16, 10), agedMetal, x, y, 0.089, group).scale.z = 0.38;
     }
     // Fine suspension wires give the square an actual place in the set.
-    for (const x of [-0.99, 0.99]) mesh(new THREE.CylinderGeometry(0.003, 0.003, 3.15, 5), darkMetal, x, 2.94, -0.01, group);
+    for (const x of [-0.99, 0.99]) {
+      mesh(new THREE.CylinderGeometry(0.003, 0.003, 3.15, 5), darkMetal, x, 2.94, -0.01, group);
+      mesh(new THREE.BoxGeometry(0.14, 0.08, 0.12), darkMetal, x, 4.39, -0.01, group);
+    }
   }
 
   const rand = seeded(832);
@@ -190,7 +228,7 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
   for (let i = 0; i < dust.length; i += 3) { dust[i] = (rand() - 0.5) * 5; dust[i + 1] = rand() * 4; dust[i + 2] = (rand() - 0.5) * 3; }
   dustGeo.setAttribute("position", new THREE.BufferAttribute(dust, 3));
   const dustMat = new THREE.PointsMaterial({ color: "#e7ddbd", size: 0.008, transparent: true, opacity: 0.17, depthWrite: false });
-  const motes = new THREE.Points(dustGeo, dustMat); scene.add(motes);
+  const motes = new THREE.Points(dustGeo, dustMat); motes.visible = !initialReduced; scene.add(motes);
   let lastBounds = "";
   function projectBounds() {
     camera.updateMatrixWorld();
@@ -201,41 +239,51 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
     const signature = Object.values(bounds).map(Math.round).join();
     if (signature !== lastBounds) { lastBounds = signature; hooks.onBounds(bounds); }
   }
-  function positionCamera(progress: number) {
+  function positionCamera(progress: number, reportBounds = false) {
     const p = reduced ? 1 : smooth(progress);
     camera.position.set(0.15 * (1 - p), 2.55 + 0.2 * (1 - p), cameraDistance + 4 * (1 - p));
-    camera.lookAt(target); projectBounds();
+    camera.lookAt(target);
+    if (reportBounds) projectBounds();
   }
   function setLight(level: number) {
-    spot.intensity = 33 * level; bulbMat.emissiveIntensity = 1.3 * level; glowMat.opacity = 0.6 * level;
+    spot.intensity = 33 * level; bulbMat.emissiveIntensity = 0.32 * level; filamentMat.emissiveIntensity = 2.4 * level; glowMat.opacity = 0.48 * level;
     beamMat.uniforms.strength.value = level; dustMat.opacity = 0.17 * level;
-    bounce.intensity = 4.0 * level;
+    bounce.intensity = 4.0 * level; floorBounce.intensity = 2.2 * level;
   }
   function resize() {
     const w = host.clientWidth, h = host.clientHeight;
     camera.aspect = w / h; camera.updateProjectionMatrix();
     cameraDistance = Math.max(7.4, 3.75 / (2 * Math.tan(THREE.MathUtils.degToRad(21)) * camera.aspect));
     const mobile = w < 700;
-    renderer.setPixelRatio(degraded ? 0.8 : Math.min(window.devicePixelRatio, mobile ? 1 : 1.5));
+    renderer.setPixelRatio(degraded ? 0.8 : Math.min(window.devicePixelRatio, mobile || reduced ? 1 : 1.5));
     renderer.setSize(w, h);
-    const shadowSize = mobile ? 512 : 1024;
+    const shadowSize = mobile || degraded || reduced ? 512 : 1024;
     if (spot.shadow.mapSize.x !== shadowSize) { spot.shadow.mapSize.set(shadowSize, shadowSize); spot.shadow.map?.dispose(); spot.shadow.map = null; }
-    positionCamera(phase === "revealing" ? elapsed / INTRO_MS.reveal : 1);
+    positionCamera(phase === "revealing" ? elapsed / 1650 : 1, true);
+    renderer.shadowMap.needsUpdate = true;
   }
   const observer = new ResizeObserver(resize); observer.observe(host); resize();
   // Browsers may suspend RAF while hidden; do not count that gap on resume.
-  const visibilityChanged = () => { previous = 0; };
+  function startLoop() {
+    if (disposed || running || !active || document.hidden) return;
+    running = true; previous = 0; raf = requestAnimationFrame(frame);
+  }
+  function stopLoop() {
+    if (!running) return;
+    running = false; cancelAnimationFrame(raf); raf = 0; previous = 0;
+  }
+  const visibilityChanged = () => { if (document.hidden) stopLoop(); else startLoop(); };
   document.addEventListener("visibilitychange", visibilityChanged);
-  function finish() { phase = "ready"; setLight(1); positionCamera(1); hooks.onState(phase, index); }
+  function finish() { phase = "ready"; setLight(1); positionCamera(1, true); renderer.shadowMap.needsUpdate = true; hooks.onState(phase, index); }
   function frame(now: number) {
-    if (disposed) return;
-    raf = requestAnimationFrame(frame);
+    if (disposed || !running) return;
     const dt = previous ? now - previous : 0; previous = now;
     if (document.hidden) return;
     // Sequence timing follows active wall-clock time, including slower rendered frames.
     if (entered) elapsed += dt;
     if (phase === "revealing") {
-      positionCamera(elapsed / (reduced ? 200 : INTRO_MS.reveal));
+      // The approved 2.1s reveal is a 1.65s dolly followed by a 450ms settle.
+      positionCamera(elapsed / (reduced ? 200 : 1650));
       setLight(smooth(elapsed / (reduced ? 200 : 850)));
       if (elapsed >= (reduced ? 200 : INTRO_MS.reveal)) finish();
     } else if (phase === "switching") {
@@ -248,20 +296,37 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
         cards[incoming].position.x = direction * (1 - t) * 4.8;
         cards[incoming].visible = true;
         setLight(switchLight(elapsed));
+        renderer.shadowMap.needsUpdate = true;
       }
       if (elapsed >= (reduced ? 200 : SWITCH_MS)) { cards[index].visible = false; index = incoming; cards[index].position.x = 0; finish(); }
     }
     motes.visible = !reduced && !degraded;
-    if (motes.visible && entered) motes.rotation.y += dt * 0.000006;
-    renderer.render(scene, camera);
-    if (entered && phase === "ready" && ++frames > 60 && !degraded) {
-      if (dt > 33) slowFrames++; else slowFrames = Math.max(0, slowFrames - 1);
-      if (slowFrames > 90) { degraded = true; resize(); }
+    if (motes.visible && entered) {
+      // Almost-static, uneven drift reads as suspended dust; rotating the full
+      // cloud around the card reads as a graphic star field.
+      motes.position.x = Math.sin(now * 0.000071) * 0.018;
+      motes.position.y = Math.sin(now * 0.000043 + 1.7) * 0.011;
     }
+    renderer.render(scene, camera);
+    if (entered && !degraded && ++frames > 12) {
+      if (dt > 40) slowFrames++; else slowFrames = Math.max(0, slowFrames - 1);
+      if (slowFrames > 12) {
+        degraded = true;
+        // IBL is the most expensive remaining material path on software and
+        // low-end renderers. Direct practical lighting still preserves the set.
+        scene.environment = null;
+        scene.traverse(object => {
+          if (!(object instanceof THREE.Mesh)) return;
+          for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.needsUpdate = true;
+        });
+        resize();
+      }
+    }
+    if (running) raf = requestAnimationFrame(frame);
   }
   function dispose() {
     if (disposed) return;
-    disposed = true; cancelAnimationFrame(raf); observer.disconnect();
+    disposed = true; stopLoop(); observer.disconnect();
     document.removeEventListener("visibilitychange", visibilityChanged);
     renderer.domElement.removeEventListener("webglcontextlost", lost);
     const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>();
@@ -271,7 +336,7 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
       }
     });
     geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); allTextures.forEach(t => t.dispose());
-    spot.shadow.dispose(); renderer.dispose(); renderer.domElement.remove();
+    spot.shadow.dispose(); environmentTarget.dispose(); renderer.dispose(); renderer.domElement.remove();
   }
   function lost(event: Event) { event.preventDefault(); dispose(); hooks.onFailure(); }
   renderer.domElement.addEventListener("webglcontextlost", lost);
@@ -281,13 +346,20 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
     await renderer.compileAsync(scene, camera);
     if (disposed) throw new Error("WebGL context lost while preparing the room");
     renderer.render(scene, camera);
-    raf = requestAnimationFrame(frame);
+    renderer.shadowMap.autoUpdate = false;
   } catch (error) { dispose(); throw error; }
   return {
     enter(initial, skip) {
-      entered = true; index = initial; elapsed = 0;
+      entered = true; active = true; index = initial; elapsed = 0; frames = 0; slowFrames = 0;
       cards.forEach((card, i) => { card.visible = i === index; card.position.x = 0; });
+      renderer.shadowMap.needsUpdate = true; startLoop();
       if (skip) finish();
+      else if (reduced) {
+        phase = "revealing"; hooks.onState(phase, index);
+        // The preloaded frame already contains the final reduced-motion pose;
+        // React's room-layer opacity transition supplies the brief fade.
+        finish();
+      }
       else { phase = "revealing"; positionCamera(0); setLight(0); hooks.onState(phase, index); }
     },
     move(d) {
@@ -295,7 +367,18 @@ export async function createRoom(host: HTMLElement, hooks: Hooks, initialReduced
       direction = d; incoming = nextCard(index, direction); elapsed = 0; phase = "switching";
       hooks.onState(phase, index);
     },
-    setReducedMotion(value) { reduced = value; },
+    setActive(value) { active = value; if (active) startLoop(); else stopLoop(); },
+    setReducedMotion(value) {
+      reduced = value;
+      renderer.shadowMap.enabled = !reduced;
+      scene.environment = reduced || degraded ? null : environmentTarget.texture;
+      motes.visible = !reduced && !degraded;
+      scene.traverse(object => {
+        if (!(object instanceof THREE.Mesh)) return;
+        for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.needsUpdate = true;
+      });
+      resize();
+    },
     dispose,
   };
 }
