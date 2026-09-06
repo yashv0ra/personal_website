@@ -18,7 +18,8 @@ export default function CinematicHome({ email, links }: { email: string; links: 
   const action = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const controller = useRef<RoomController | null>(null);
-  const load = useRef<Promise<RoomController | null> | null>(null);
+  // Readiness is a latch, not an owner: a loaded controller may later be disposed.
+  const load = useRef<Promise<void> | null>(null);
   const alive = useRef(true);
   const lifetime = useRef(0);
   const started = useRef(false);
@@ -91,15 +92,14 @@ export default function CinematicHome({ email, links }: { email: string; links: 
     const loadingTimeout = new Promise<null>(resolve => {
       timeout = setTimeout(() => { activateFallback(); resolve(null); }, 5000);
     });
-    load.current = Promise.race([creating, loadingTimeout]).then(room => {
+    load.current = Promise.race([creating, loadingTimeout]).then(() => {
       clearTimeout(timeout);
-      if (!valid()) return null;
+      if (!valid()) return;
       if (saved !== null && !started.current) {
         started.current = true; setStage("room");
-        if (room) room.enter(saved, true);
+        if (controller.current) controller.current.enter(saved, true);
         else onState("ready", saved);
       }
-      return room;
     });
     return () => {
       cancelled = true; alive.current = false; clearTimeout(timeout);
@@ -143,8 +143,11 @@ export default function CinematicHome({ email, links }: { email: string; links: 
       if (fade) { animations.current.push(fade); await fade.finished.catch(() => {}); }
     }
     if (!valid()) return;
-    const room = await load.current;
+    await load.current;
     if (!valid()) return;
+    // Context loss clears this ref. Never replay the controller captured by an
+    // already-resolved loading promise, whose animation loop may have stopped.
+    const room = controller.current;
     setStage("room");
     if (room) room.enter(0, false);
     else { setFallback(true); onState("ready", 0); }

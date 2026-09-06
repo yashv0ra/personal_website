@@ -1,0 +1,25 @@
+[
+  {
+    "name": "desktop",
+    "passed": true,
+    "introMs": 15599.19999999553,
+    "switchMs": 1133.1000000014901,
+    "contextLossReplay": true,
+    "frames": {
+      "renderer": "Chromium SwiftShader software WebGL",
+      "medianMs": 91.59999999999854,
+      "p95Ms": 100
+    },
+    "errors": []
+  },
+  {
+    "name": "mobile",
+    "passed": true,
+    "errors": []
+  },
+  {
+    "name": "reduced-motion",
+    "passed": true,
+    "errors": []
+  }
+]
