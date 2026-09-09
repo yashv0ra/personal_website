@@ -43,6 +43,18 @@ This repository contains a **Next.js personal website** that highlights Yash’s
   - provider rate metadata
   - local daily guess budget + cooldown feedback
 
+### 4) Interactive desk (`/cinematic`)
+The homepage X opens the existing server-validated password gate. Unlocking now goes directly to an overhead desk; the old light room and intro are removed.
+
+- Nameplate → About; central Experience book → paged résumé; Mac → projects.
+- Gamepad → Lab; envelope → email/social links; photograph → interests.
+- Globe → world clocks; coffee → focus timer; sticky note → private local scratchpad.
+- Globe spins on hover, coffee steams, hands type subtly, and the lamp gently flickers. Lamp and rain radio toggle on click. Audio is opt-in and stops when the tab is hidden.
+- Mobile pans horizontally with native swiping and arrow controls. Keyboard focus, native modal dialogs, reduced motion, and a pause control are supported.
+- Decorative books intentionally have no text. The scene image is AI-generated; functional content comes from existing site data.
+
+Run `DESK_URL=http://localhost:3025 node scripts/verify-desk.mjs` after starting the server on that port. Screenshots and results are written to `output/playwright/desk/`. Historical `docs/CINEMATIC_*` files describe the retired design.
+
 ## API Behavior
 
 ### `POST /api/chat`

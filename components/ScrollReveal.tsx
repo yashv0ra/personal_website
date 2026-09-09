@@ -20,8 +20,8 @@ export default function ScrollReveal({ children, className = "", delay = 0 }: Sc
     }
 
     if (typeof IntersectionObserver === "undefined") {
-      setIsVisible(true);
-      return undefined;
+      const frame = requestAnimationFrame(() => setIsVisible(true));
+      return () => cancelAnimationFrame(frame);
     }
 
     const observer = new IntersectionObserver(

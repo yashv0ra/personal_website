@@ -56,7 +56,7 @@ function SocialIcon({ id }: { id: SocialLinkId }) {
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
-      <a href="/cinematic" aria-label="Enter cinematic experience" title="Enter cinematic experience" className="absolute right-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-white/5 hover:text-[var(--foreground)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent-orange)] sm:right-8 sm:top-7">
+      <a href="/cinematic" aria-label="Enter Yash’s desk" title="Enter Yash’s desk" className="absolute right-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-white/5 hover:text-[var(--foreground)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent-orange)] sm:right-8 sm:top-7">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
       </a>
       <InteractiveDotField />

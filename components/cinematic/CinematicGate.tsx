@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, type ReactNode } from "react";
+import Link from "next/link";
 import styles from "./gate.module.css";
 
 type GateState = { content: ReactNode; error: string };
@@ -30,7 +31,7 @@ export default function CinematicGate({ unlock }: {
 
   return (
     <main className={styles.gate}>
-      <a href="/" className={styles.back}>Back to home</a>
+      <Link href="/" className={styles.back}>Back to home</Link>
       <form action={submit} className={styles.form} aria-busy={pending}>
         <h1 className={styles.heading}>Enter password</h1>
         <label className={styles.label} htmlFor="cinematic-password">Password</label>

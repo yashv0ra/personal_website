@@ -1,0 +1,3 @@
+Desk background created with the built-in image generation tool for Yash Vora, September 2026. Final prompt: preserve the overhead warm walnut desk, YASH VORA nameplate, central Experience book, cropped typing hands/MacBook, globe, coffee, lamp, radio, controller, envelope and clutter; remove all lettering from decorative books and camera. Original 1672 × 941 PNG converted to WebP quality 88. Decorative props and landscape photograph are imagined, not biographical claims. No new runtime packages.
+
+Globe geometry: Natural Earth, ne_110m_land.geojson, public domain. Source: https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_land.geojson . Rendered in a local canvas with an orthographic projection.
